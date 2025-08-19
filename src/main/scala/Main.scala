@@ -61,11 +61,15 @@ object Main {
   }
 
   private def rotateShapes(world: World, frameIndex: Int): Either[NoSuchShape, World] = {
-    val delta = Rotation(
-      yaw = frameIndex * Math.PI / -36,
-      pitch = 0,
-      roll = frameIndex * Math.PI / 72
+    // Apply cumulative rotation from the start position for smooth animation
+    val totalRotation = Rotation(
+      yaw = frameIndex * Math.PI / -36,    // Total yaw rotation up to this frame
+      pitch = 0,                           // No pitch rotation
+      roll = frameIndex * Math.PI / 72     // Total roll rotation up to this frame
     )
-    world.rotate(SHAPE_ID, delta)
+    
+    // Reset to start position and apply the total rotation
+    val worldWithReset = world.reset.add(Box(SHAPE_ID, 40, 70, 20), Coord(40, 90, 40), totalRotation)
+    Right(worldWithReset)
   }
 }
