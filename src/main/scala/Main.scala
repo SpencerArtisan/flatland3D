@@ -31,7 +31,7 @@ object Main {
     frames.foreach { frame =>
       Console.print(CLEAR)
       Console.print(frame)
-      Thread.sleep(50)
+      Thread.sleep(33)
     }
 
   private def rotateShapes(world: World, frameIndex: Int): Either[NoSuchShape, World] =
@@ -42,14 +42,14 @@ object Main {
 
   private def rotateShapes3D(world: World3D, frameIndex: Int): Either[NoSuchShape, World3D] = {
     val delta1 = Rotation3(
-      yaw = frameIndex * Math.PI / 80,
-      pitch = frameIndex * Math.PI / 120,
-      roll = 0
+      yaw = frameIndex * Math.PI / 20,
+      pitch = frameIndex * Math.PI / 30,
+      roll = frameIndex * Math.PI / 40
     )
     val delta2 = Rotation3(
-      yaw = frameIndex * Math.PI / -60,
+      yaw = frameIndex * Math.PI / -12,
       pitch = 0,
-      roll = frameIndex * Math.PI / 180
+      roll = frameIndex * Math.PI / 24
     )
     for {
       w1 <- world.rotate(SHAPE_1_ID, delta1)
