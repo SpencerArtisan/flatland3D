@@ -51,7 +51,8 @@ object Renderer3D {
                    chars: String = ".,:-=+*#%@",
                    ambient: Double = 0.2,
                    xScale: Int = 1,
-                   nearToFarZs: Seq[Int] = Nil): String = {
+                   nearToFarZs: Seq[Int] = Nil,
+                   cullBackfaces: Boolean = true): String = {
     val rows = 0 until world.height
     val columns = 0 until world.width
     val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
@@ -98,6 +99,10 @@ object Renderer3D {
           (p - centerWorld).normalize
         }
         val worldNormal = placement.rotation.applyTo(localNormal).normalize
+        if (cullBackfaces) {
+          val viewDirWorld = Coord3(0, 0, -1)
+          if (worldNormal.dot(viewDirWorld) >= 0) return None
+        }
 
         val ndotl = Math.max(0.0, worldNormal.dot(light))
         val brightnessLinear = Math.min(1.0, Math.max(0.0, ambient + (1.0 - ambient) * ndotl))
