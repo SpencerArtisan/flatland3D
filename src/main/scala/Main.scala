@@ -13,9 +13,9 @@ object Main {
       .add(Rectangle(SHAPE_2_ID, 30, 70), Coord(200, 110), angle = 0, z = 2)
 
   private def buildWorld3D =
-    World3D(160, 80, 80)
-      .add(Box(SHAPE_1_ID, 30, 15, 20), Coord3(40, 30, 20), Rotation3.ZERO)
-      .add(Box(SHAPE_2_ID, 15, 25, 15), Coord3(70, 35, 40), Rotation3.ZERO)
+    World3D(300, 180, 60)
+      .add(Box(SHAPE_1_ID, 80, 40, 30), Coord3(60, 60, 20), Rotation3.ZERO)
+      .add(Box(SHAPE_2_ID, 40, 70, 20), Coord3(180, 90, 40), Rotation3.ZERO)
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map(rotateShapes(world, _)).collect {
