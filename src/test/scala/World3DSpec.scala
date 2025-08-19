@@ -5,14 +5,14 @@ class World3DSpec extends AnyFlatSpec with should.Matchers {
 
   "A 3D renderer" should "render empty world as empty scene" in {
     val world = World3D(0, 0, 0)
-    Renderer3D.projectOrthographic(world).render() should be("")
+    Renderer3D.renderWith(world, _ => '*', blankChar = '.') should be("")
   }
 
   it should "render a single voxel box orthographically" in {
     val world = World3D(3, 1, 3)
       .add(Box(100, 1, 1, 1), Coord3(1, 0, 1))
 
-    Renderer3D.projectOrthographic(world).render() should be(".*.")
+    Renderer3D.renderWith(world, _ => '*', blankChar = '.') should be(".*.")
   }
 
   it should "occlude nearer z in front (higher z nearer)" in {

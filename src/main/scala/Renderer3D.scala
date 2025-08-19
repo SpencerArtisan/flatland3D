@@ -1,22 +1,5 @@
 
 object Renderer3D {
-  // Orthographic projection along -Z: for each (x,y), scan z from near to far and stop at first hit
-  def projectOrthographic(world: World3D,
-                          nearToFarZs: Seq[Int] = Nil): Scene = {
-    val rows = 0 until world.height
-    val columns = 0 until world.width
-    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else 0 until world.depth
-
-    val occupied = rows.map { row =>
-      columns.map { column =>
-        zScan.exists { z =>
-          val p = Coord3(column, row, z)
-          world.placements.exists(_.occupiesSpaceAt(p))
-        }
-      }
-    }
-    Scene(occupied)
-  }
 
   def renderWith(world: World3D,
                  charFor: Placement3D => Char,
