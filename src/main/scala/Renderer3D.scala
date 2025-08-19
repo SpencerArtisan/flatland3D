@@ -59,18 +59,40 @@ object Renderer3D {
 
     def shadeAt(p: Coord3): Option[Char] = {
       world.placements.find(_.occupiesSpaceAt(p)).map { placement =>
-        // Generic normal estimation via occupancy gradient in world space
-        val eps = 0.5
-        def occ(wc: Coord3): Boolean = placement.occupiesSpaceAt(wc)
-        val gx = (if (occ(Coord3(p.x + eps, p.y, p.z))) 1 else 0) - (if (occ(Coord3(p.x - eps, p.y, p.z))) 1 else 0)
-        val gy = (if (occ(Coord3(p.x, p.y + eps, p.z))) 1 else 0) - (if (occ(Coord3(p.x, p.y - eps, p.z))) 1 else 0)
-        val gz = (if (occ(Coord3(p.x, p.y, p.z + eps))) 1 else 0) - (if (occ(Coord3(p.x, p.y, p.z - eps))) 1 else 0)
-        val gradient = Coord3(gx, gy, gz)
-        val worldNormal = if (gradient.magnitude > 0) gradient.normalize else {
-          // Fallback: radial approximation from shape center
-          val centerWorld = placement.origin + placement.shape.center
-          (p - centerWorld).normalize
+        // Binary search along -Z (view direction) to approximate the surface point between outside and inside voxels
+        val viewDir = Coord3(0, 0, -1) // orthographic along -Z
+        val step = 1.0
+        var tOutside = 0.0
+        var tInside = 0.0
+        var found = false
+        // Find a boundary bracket: move forward until outside, then back 1 step inside
+        var t = 0.0
+        while (!found && t > -3.0) { // look up to 3 voxels towards the camera
+          val q = Coord3(p.x + viewDir.x * t, p.y + viewDir.y * t, p.z + viewDir.z * t)
+          if (!placement.occupiesSpaceAt(q)) {
+            tOutside = t
+            tInside = t + step
+            found = true
+          }
+          t -= step
         }
+        val surfacePoint = if (found) {
+          var a = tOutside
+          var b = tInside
+          var i = 0
+          while (i < 5) { // 5 iterations are enough for sub-voxel precision
+            val m = (a + b) / 2
+            val qm = Coord3(p.x + viewDir.x * m, p.y + viewDir.y * m, p.z + viewDir.z * m)
+            if (placement.occupiesSpaceAt(qm)) b = m else a = m
+            i += 1
+          }
+          Coord3(p.x + viewDir.x * b, p.y + viewDir.y * b, p.z + viewDir.z * b)
+        } else p
+
+        // Compute local-space normal via shape API for flat shading when available
+        val local = placement.worldToLocal(surfacePoint)
+        val localNormal = placement.shape.surfaceNormalAt(local)
+        val worldNormal = placement.rotation.applyTo(localNormal).normalize
 
         val ndotl = Math.max(0.0, worldNormal.dot(light))
         val brightness = Math.min(1.0, Math.max(0.0, ambient + (1.0 - ambient) * ndotl))

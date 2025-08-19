@@ -15,6 +15,14 @@ case class Placement3D(origin: Coord3, rotation: Rotation3, shape: Shape3) {
       pitch = rotation.pitch + delta.pitch,
       roll = rotation.roll + delta.roll
     ))
+
+  def worldToLocal(coord: Coord3): Coord3 = {
+    val rotationCenter = origin + shape.center
+    val coordRelativeToRotationCenter = coord - rotationCenter
+    val rotatedCoordRelativeToRotationCenter = rotation.applyTo(coordRelativeToRotationCenter)
+    val rotatedCoord = rotatedCoordRelativeToRotationCenter + rotationCenter
+    rotatedCoord - origin
+  }
 }
 
 
