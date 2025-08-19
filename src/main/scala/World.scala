@@ -3,8 +3,8 @@ case class World(width: Int, height: Int, private val shapes: Map[Int, Placement
 
   def reset: World = World(width, height)
 
-  def add(shape: Shape, coord: Coord, angle: Double = 0): World =
-    this.copy(shapes = shapes + (shape.id -> Placement(coord, angle, shape)))
+  def add(shape: Shape, coord: Coord, angle: Double = 0, z: Int = 0): World =
+    this.copy(shapes = shapes + (shape.id -> Placement(coord, angle, shape, z)))
 
   def rotate(shapeId: Int, radians: Double): Either[NoSuchShape, World] =
     shapes.get(shapeId)
@@ -13,4 +13,6 @@ case class World(width: Int, height: Int, private val shapes: Map[Int, Placement
 
   def exists(predicate: Placement => Boolean): Boolean =
     shapes.values.exists(predicate)
+
+  def placements: Iterable[Placement] = shapes.values
 }

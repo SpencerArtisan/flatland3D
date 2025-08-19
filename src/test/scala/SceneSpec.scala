@@ -84,4 +84,22 @@ class SceneSpec extends AnyFlatSpec with should.Matchers {
     Scene.from(world.add(Rectangle(100, 5, 5), Coord(-1, -1)))
       .render() should be("***\n***\n***")
   }
+
+  it should "occlude with higher z in front by default" in {
+    val world = World(3, 1)
+      .add(Rectangle(100, 1, 1), Coord(1, 0), z = 0)
+      .add(Rectangle(101, 1, 1), Coord(1, 0), z = 1)
+
+    val render = Scene.renderWith(world, p => if (p.shape.id == 100) 'A' else 'B', blankChar = '.')
+    render should be(".B.")
+  }
+
+  it should "allow explicit z-order override" in {
+    val world = World(3, 1)
+      .add(Rectangle(100, 1, 1), Coord(1, 0), z = 0)
+      .add(Rectangle(101, 1, 1), Coord(1, 0), z = 1)
+
+    val renderBackToFront = Scene.renderWith(world, p => if (p.shape.id == 100) 'A' else 'B', blankChar = '.', zOrder = Seq(0, 1))
+    renderBackToFront should be(".A.")
+  }
 }

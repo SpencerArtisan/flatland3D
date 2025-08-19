@@ -9,8 +9,8 @@ object Main {
 
   private def buildWorld =
     World(300, 200)
-      .add(Rectangle(SHAPE_1_ID, 170, 70), Coord(20, 60))
-      .add(Rectangle(SHAPE_2_ID, 30, 70), Coord(200, 110))
+      .add(Rectangle(SHAPE_1_ID, 170, 70), Coord(20, 60), angle = 0, z = 1)
+      .add(Rectangle(SHAPE_2_ID, 30, 70), Coord(200, 110), angle = 0, z = 2)
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map(rotateShapes(world, _)).collect {
