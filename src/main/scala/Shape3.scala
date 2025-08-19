@@ -27,7 +27,8 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
     val halfHeight = height / 2
     val halfDepth = depth / 2
     
-    val tolerance = 22.0  // Optimized tolerance for extreme rotations
+    // Use no tolerance to ensure the box only occupies space at its exact boundaries
+    val tolerance = 0.0  // No tolerance to fix multiple Z-level issue
     val xWithin = coord.x >= -halfWidth - tolerance && coord.x <= halfWidth + tolerance
     val yWithin = coord.y >= -halfHeight - tolerance && coord.y <= halfHeight + tolerance
     val zWithin = coord.z >= -halfDepth - tolerance && coord.z <= halfDepth + tolerance
@@ -49,13 +50,25 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
     val dz0 = local.z + halfDepth  // Distance to -Z face
     val dz1 = halfDepth - local.z  // Distance to +Z face
     
-    val minDist = Seq(dx0, dx1, dy0, dy1, dz0, dz1).min
-    if (minDist == dx0) Coord3(-1, 0, 0)      // -X face
-    else if (minDist == dx1) Coord3(1, 0, 0)   // +X face
-    else if (minDist == dy0) Coord3(0, -1, 0)  // -Y face
-    else if (minDist == dy1) Coord3(0, 1, 0)   // +Y face
-    else if (minDist == dz0) Coord3(0, 0, -1)  // -Z face
-    else Coord3(0, 0, 1)                       // +Z face
+    // Use a more robust approach: find the face with the smallest distance
+    // and add some tolerance to ensure consistent results
+    val tolerance = 0.5  // Increased tolerance for more consistent results
+    val distances = Seq(
+      (dx0, Coord3(-1, 0, 0)),      // -X face
+      (dx1, Coord3(1, 0, 0)),       // +X face
+      (dy0, Coord3(0, -1, 0)),      // -Y face
+      (dy1, Coord3(0, 1, 0)),       // +Y face
+      (dz0, Coord3(0, 0, -1)),      // -Z face
+      (dz1, Coord3(0, 0, 1))        // +Z face
+    )
+    
+    // Find the face with the smallest distance, with some tolerance for consistency
+    val minDist = distances.minBy(_._1)._1
+    val closestFaces = distances.filter(d => Math.abs(d._1 - minDist) < tolerance)
+    
+    // If multiple faces are equally close, prefer the one that's most "inside" the box
+    val bestFace = closestFaces.maxBy(_._1)
+    bestFace._2
   }
 }
 

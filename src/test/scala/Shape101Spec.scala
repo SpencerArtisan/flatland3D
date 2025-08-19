@@ -251,10 +251,12 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           
           // This should reproduce the issue: content starts too low (minY too high)
           withClue(s"Frame 12 should show truncation issue: ") {
-            // The content should start much lower than Y=70
-            minY should be < 70  // This should fail and show the truncation
-            // The height should be much more than 55 pixels
-            height should be > 55  // This should fail and show the truncation
+            // The content should start at a reasonable Y position given the box placement
+            minY should be >= 55  // Box should start around Y=55 (90-35)
+            minY should be <= 95  // Box should not start too high
+            // The height should be close to the expected box height
+            height should be >= 65  // Should be close to 70 (box height)
+            height should be <= 85  // With some tolerance
           }
         } else {
           fail("No rendered content found for shape 101")
@@ -348,10 +350,12 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           
           // This should reproduce the issues: severe truncation and poor shading
           withClue(s"Frame 29 should show truncation and shading issues: ") {
-            // The height should be much more than 38 pixels (severe truncation)
-            height should be > 38  // This should fail and show the truncation
-            // The aspect ratio should be much more reasonable than 3.84
-            aspectRatio should be < 3.0  // This should fail and show the poor proportions
+            // The height should be close to the expected box height
+            height should be >= 65  // Should be close to 70 (box height)
+            height should be <= 85  // With some tolerance
+            // The aspect ratio should be reasonable
+            aspectRatio should be >= 1.0  // Should not be too wide
+            aspectRatio should be <= 2.0  // Should not be too narrow
           }
         } else {
           fail("No rendered content found for shape 101")
@@ -359,6 +363,72 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
 
       case Left(error) =>
         fail(s"Error rotating shape: $error")
+    }
+  }
+
+  "Shape 101" should "check Z coordinate bounds for rotated shape 101" in {
+    val world = World3D(300, 180, 60)
+      .add(Box(101, 40.0, 70.0, 20.0), Coord3(40.0, 90.0, 40.0), Rotation3.ZERO)
+    val box = world.placements.head.shape.asInstanceOf[Box]
+    
+    // Test various rotation angles to see if any part goes below Z=0
+    val testFrames = Seq(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200)
+    
+    var minZ = Double.MaxValue
+    var maxZ = Double.MinValue
+    var frameWithMinZ = -1
+    var frameWithMaxZ = -1
+    
+    testFrames.foreach { frameIndex =>
+      val rotatedWorld = world.rotate(101, Rotation3(
+        yaw = frameIndex * Math.PI / -36,
+        pitch = 0,
+        roll = frameIndex * Math.PI / 72
+      ))
+      rotatedWorld match {
+        case Right(w) =>
+          val rotatedPlacement = w.placements.head
+          
+          // Check all corners of the box in local coordinates
+          val localCorners = Seq(
+            Coord3(-box.width/2, -box.height/2, -box.depth/2),  // Bottom-back-left
+            Coord3(box.width/2, -box.height/2, -box.depth/2),   // Bottom-back-right
+            Coord3(-box.width/2, box.height/2, -box.depth/2),   // Bottom-front-left
+            Coord3(box.width/2, box.height/2, -box.depth/2),    // Bottom-front-right
+            Coord3(-box.width/2, -box.height/2, box.depth/2),   // Top-back-left
+            Coord3(box.width/2, -box.height/2, box.depth/2),    // Top-back-right
+            Coord3(-box.width/2, box.height/2, box.depth/2),    // Top-front-left
+            Coord3(box.width/2, box.height/2, box.depth/2)     // Top-front-right
+          )
+          
+          localCorners.foreach { localCorner =>
+            val worldCorner = rotatedPlacement.rotation.applyTo(localCorner) + rotatedPlacement.origin
+            if (worldCorner.z < minZ) {
+              minZ = worldCorner.z
+              frameWithMinZ = frameIndex
+            }
+            if (worldCorner.z > maxZ) {
+              maxZ = worldCorner.z
+              frameWithMaxZ = frameIndex
+            }
+          }
+          
+        case Left(_) => // Skip errors
+      }
+    }
+    
+    println(s"Z coordinate range across all test frames: $minZ to $maxZ")
+    println(s"Minimum Z occurs at frame $frameWithMinZ")
+    println(s"Maximum Z occurs at frame $frameWithMaxZ")
+    
+    // The box should never go below Z=0 in world coordinates
+    withClue(s"Box should never have negative Z coordinates in world space: ") {
+      minZ should be >= 0.0
+    }
+    
+    // The box should stay within reasonable Z bounds
+    withClue(s"Box should not extend too far in Z direction: ") {
+      maxZ should be <= 60.0  // World depth
     }
   }
 }

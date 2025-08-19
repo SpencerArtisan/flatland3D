@@ -23,6 +23,33 @@ case class Placement3D(origin: Coord3, rotation: Rotation3, shape: Shape3) {
     val inverseRotation = Rotation3(-rotation.yaw, -rotation.pitch, -rotation.roll)
     inverseRotation.applyTo(translated)
   }
+  
+  // Check if this placement would extend beyond world boundaries
+  def wouldExtendBeyondBounds(worldWidth: Int, worldHeight: Int, worldDepth: Int): Boolean = {
+    val box = shape.asInstanceOf[Box]
+    val halfWidth = box.width / 2
+    val halfHeight = box.height / 2
+    val halfDepth = box.depth / 2
+    
+    // Check all 8 corners of the box after rotation
+    val corners = Seq(
+      Coord3(-halfWidth, -halfHeight, -halfDepth),
+      Coord3(halfWidth, -halfHeight, -halfDepth),
+      Coord3(-halfWidth, halfHeight, -halfDepth),
+      Coord3(halfWidth, halfHeight, -halfDepth),
+      Coord3(-halfWidth, -halfHeight, halfDepth),
+      Coord3(halfWidth, -halfHeight, halfDepth),
+      Coord3(-halfWidth, halfHeight, halfDepth),
+      Coord3(halfWidth, halfHeight, halfDepth)
+    )
+    
+    corners.exists { localCorner =>
+      val worldCorner = rotation.applyTo(localCorner) + origin
+      worldCorner.x < 0 || worldCorner.x >= worldWidth ||
+      worldCorner.y < 0 || worldCorner.y >= worldHeight ||
+      worldCorner.z < 0 || worldCorner.z >= worldDepth
+    }
+  }
 }
 
 

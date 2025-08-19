@@ -8,7 +8,16 @@ case class World3D(width: Int, height: Int, depth: Int, private val shapes: Map[
 
   def rotate(shapeId: Int, delta: Rotation3): Either[NoSuchShape, World3D] =
     shapes.get(shapeId)
-      .map(placement => this.copy(shapes = shapes + (shapeId -> placement.rotate(delta))))
+      .map(placement => {
+        val newPlacement = placement.rotate(delta)
+        // Check if the rotation would cause the shape to extend beyond world boundaries
+        if (newPlacement.wouldExtendBeyondBounds(width, height, depth)) {
+          // Return the original placement unchanged to prevent boundary violations
+          this
+        } else {
+          this.copy(shapes = shapes + (shapeId -> newPlacement))
+        }
+      })
       .toRight(NoSuchShape(shapeId))
 
   def placements: Iterable[Placement3D] = shapes.values

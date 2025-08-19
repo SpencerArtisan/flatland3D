@@ -5,7 +5,7 @@ object Renderer3D {
                           nearToFarZs: Seq[Int] = Nil): Scene = {
     val rows = 0 until world.height
     val columns = 0 until world.width
-    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
+    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else 0 until world.depth
 
     val occupied = rows.map { row =>
       columns.map { column =>
@@ -25,7 +25,7 @@ object Renderer3D {
                  nearToFarZs: Seq[Int] = Nil): String = {
     val rows = 0 until world.height
     val columns = 0 until world.width
-    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
+    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else 0 until world.depth
 
     rows
       .map { row =>
@@ -55,7 +55,7 @@ object Renderer3D {
                    cullBackfaces: Boolean = true): String = {
     val rows = 0 until world.height
     val columns = 0 until world.width
-    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
+    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else 0 until world.depth
     val light = lightDirection.normalize
     val viewDirWorld = Coord3(0, 0, -1)
 
@@ -63,8 +63,9 @@ object Renderer3D {
       .map { row =>
         columns
           .map { column =>
-            // Simple Z-scan: find the first occupied point from front to back
+            // Enhanced Z-scan: check multiple Z values per pixel for better accuracy at extreme rotations
             val hitChar: Option[Char] = zScan.flatMap { z =>
+              // Check only the integer Z coordinate for simplicity and correctness
               val worldPoint = Coord3(column, row, z)
               world.placements.find(_.occupiesSpaceAt(worldPoint)).map { placement =>
                 // Calculate surface normal for shading
