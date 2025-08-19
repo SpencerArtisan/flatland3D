@@ -1,8 +1,7 @@
+object Renderer {
 
-object Renderer3D {
-
-  def renderWith(world: World3D,
-                 charFor: Placement3D => Char,
+  def renderWith(world: World,
+                 charFor: Placement => Char,
                  blankChar: Char = '.',
                  xScale: Int = 1,
                  nearToFarZs: Seq[Int] = Nil): String = {
@@ -16,7 +15,7 @@ object Renderer3D {
           .map { column =>
             val ch = zScan
               .flatMap { z =>
-                val p = Coord3(column, row, z)
+                val p = Coord(column, row, z)
                 world.placements.find(_.occupiesSpaceAt(p)).map(charFor)
               }
               .headOption
@@ -29,8 +28,8 @@ object Renderer3D {
   }
 
   // Very simple Lambert-like shading for boxes: approximate per-voxel normal by comparing to shape center.
-  def renderShaded(world: World3D,
-                   lightDirection: Coord3 = Coord3(0, 0, -1),
+  def renderShaded(world: World,
+                   lightDirection: Coord = Coord(0, 0, -1),
                    chars: String = ".,:-=+*#%@",
                    ambient: Double = 0.2,
                    xScale: Int = 1,
@@ -40,7 +39,7 @@ object Renderer3D {
     val columns = 0 until world.width
     val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else 0 until world.depth
     val light = lightDirection.normalize
-    val viewDirWorld = Coord3(0, 0, -1)
+    val viewDirWorld = Coord(0, 0, -1)
 
     rows
       .map { row =>
@@ -49,7 +48,7 @@ object Renderer3D {
             // Enhanced Z-scan: check multiple Z values per pixel for better accuracy at extreme rotations
             val hitChar: Option[Char] = zScan.flatMap { z =>
               // Check only the integer Z coordinate for simplicity and correctness
-              val worldPoint = Coord3(column, row, z)
+              val worldPoint = Coord(column, row, z)
               world.placements.find(_.occupiesSpaceAt(worldPoint)).map { placement =>
                 // Calculate surface normal for shading
                 val localPoint = placement.worldToLocal(worldPoint)
@@ -57,7 +56,7 @@ object Renderer3D {
                 val worldNormal = placement.rotation.applyTo(localNormal).normalize
                 
                 // Check backface culling (disabled for now due to coordinate system issues)
-                val viewDirWorld = Coord3(0, 0, -1)
+                val viewDirWorld = Coord(0, 0, -1)
                 val dotNV = worldNormal.dot(viewDirWorld)
                 val grazingEps = 0.1  // More lenient threshold for backface culling
                 val isBackface = dotNV > grazingEps
@@ -86,5 +85,3 @@ object Renderer3D {
       .mkString("\n")
   }
 }
-
-

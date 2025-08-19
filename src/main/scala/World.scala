@@ -1,12 +1,11 @@
+case class World(width: Int, height: Int, depth: Int, private val shapes: Map[Int, Placement] = Map()) {
 
-case class World3D(width: Int, height: Int, depth: Int, private val shapes: Map[Int, Placement3D] = Map()) {
+  def reset: World = World(width, height, depth)
 
-  def reset: World3D = World3D(width, height, depth)
+  def add(shape: Shape, origin: Coord, rotation: Rotation = Rotation.ZERO): World =
+    this.copy(shapes = shapes + (shape.id -> Placement(origin, rotation, shape)))
 
-  def add(shape: Shape3, origin: Coord3, rotation: Rotation3 = Rotation3.ZERO): World3D =
-    this.copy(shapes = shapes + (shape.id -> Placement3D(origin, rotation, shape)))
-
-  def rotate(shapeId: Int, delta: Rotation3): Either[NoSuchShape, World3D] =
+  def rotate(shapeId: Int, delta: Rotation): Either[NoSuchShape, World] =
     shapes.get(shapeId)
       .map(placement => {
         val newPlacement = placement.rotate(delta)
@@ -20,7 +19,5 @@ case class World3D(width: Int, height: Int, depth: Int, private val shapes: Map[
       })
       .toRight(NoSuchShape(shapeId))
 
-  def placements: Iterable[Placement3D] = shapes.values
+  def placements: Iterable[Placement] = shapes.values
 }
-
-

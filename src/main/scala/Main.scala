@@ -4,15 +4,15 @@ object Main {
   private val SHAPE_ID = 101
 
   def main(args: Array[String]): Unit =
-    animate(buildAnimationFrames3D(buildWorld3D))
+    animate(buildAnimationFrames(buildWorld))
 
-  private def buildWorld3D =
-    World3D(300, 180, 60)
-      .add(Box(SHAPE_ID, 40, 70, 20), Coord3(40, 90, 40), Rotation3.ZERO)
+  private def buildWorld =
+    World(300, 180, 60)
+      .add(Box(SHAPE_ID, 40, 70, 20), Coord(40, 90, 40), Rotation.ZERO)
 
-  private def buildAnimationFrames3D(world: World3D): Seq[String] =
-    LazyList.from(0).map(rotateShapes3D(world, _)).collect {
-      case Right(w) => Renderer3D.renderShaded(w, lightDirection = Coord3(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
+  private def buildAnimationFrames(world: World): Seq[String] =
+    LazyList.from(0).map(rotateShapes(world, _)).collect {
+      case Right(w) => Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
     }
 
   private def animate(frames: Seq[String]): Unit = {
@@ -27,11 +27,11 @@ object Main {
   }
 
   private def printFrameDiagnostics(frameIndex: Int): Unit = {
-    val world = buildWorld3D
-    val rotatedWorld = rotateShapes3D(world, frameIndex)
+    val world = buildWorld
+    val rotatedWorld = rotateShapes(world, frameIndex)
     rotatedWorld match {
       case Right(w) =>
-        val rendered = Renderer3D.renderShaded(w, lightDirection = Coord3(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
+        val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
         val lines = rendered.split("\n")
         
         // Find bounding box of rendered content
@@ -60,8 +60,8 @@ object Main {
     }
   }
 
-  private def rotateShapes3D(world: World3D, frameIndex: Int): Either[NoSuchShape, World3D] = {
-    val delta = Rotation3(
+  private def rotateShapes(world: World, frameIndex: Int): Either[NoSuchShape, World] = {
+    val delta = Rotation(
       yaw = frameIndex * Math.PI / -36,
       pitch = 0,
       roll = frameIndex * Math.PI / 72

@@ -1,27 +1,26 @@
-
-trait Shape3 {
+trait Shape {
   def id: Int
-  def center: Coord3
-  def occupiesSpaceAt(coord: Coord3): Boolean
+  def center: Coord
+  def occupiesSpaceAt(coord: Coord): Boolean
 
   // Default: estimate local-space normal via occupancy gradient around the local point
-  def surfaceNormalAt(local: Coord3): Coord3 = {
+  def surfaceNormalAt(local: Coord): Coord = {
     val eps = 0.5
-    val gx = (if (occupiesSpaceAt(Coord3(local.x + eps, local.y, local.z))) 1 else 0) -
-      (if (occupiesSpaceAt(Coord3(local.x - eps, local.y, local.z))) 1 else 0)
-    val gy = (if (occupiesSpaceAt(Coord3(local.x, local.y + eps, local.z))) 1 else 0) -
-      (if (occupiesSpaceAt(Coord3(local.x, local.y - eps, local.z))) 1 else 0)
-    val gz = (if (occupiesSpaceAt(Coord3(local.x, local.y, local.z + eps))) 1 else 0) -
-      (if (occupiesSpaceAt(Coord3(local.x, local.y, local.z - eps))) 1 else 0)
-    val grad = Coord3(gx, gy, gz)
-    if (grad.magnitude == 0) Coord3(0, 0, 1) else grad.normalize
+    val gx = (if (occupiesSpaceAt(Coord(local.x + eps, local.y, local.z))) 1 else 0) -
+      (if (occupiesSpaceAt(Coord(local.x - eps, local.y, local.z))) 1 else 0)
+    val gy = (if (occupiesSpaceAt(Coord(local.x, local.y + eps, local.z))) 1 else 0) -
+      (if (occupiesSpaceAt(Coord(local.x, local.y - eps, local.z))) 1 else 0)
+    val gz = (if (occupiesSpaceAt(Coord(local.x, local.y, local.z + eps))) 1 else 0) -
+      (if (occupiesSpaceAt(Coord(local.x, local.y, local.z - eps))) 1 else 0)
+    val grad = Coord(gx, gy, gz)
+    if (grad.magnitude == 0) Coord(0, 0, 1) else grad.normalize
   }
 }
 
-case class Box(id: Int, width: Double, height: Double, depth: Double) extends Shape3 {
-  val center: Coord3 = Coord3(width / 2, height / 2, depth / 2)
+case class Box(id: Int, width: Double, height: Double, depth: Double) extends Shape {
+  val center: Coord = Coord(width / 2, height / 2, depth / 2)
 
-  def occupiesSpaceAt(coord: Coord3): Boolean = {
+  def occupiesSpaceAt(coord: Coord): Boolean = {
     // Local coordinates are centered around the box center
     val halfWidth = width / 2
     val halfHeight = height / 2
@@ -36,7 +35,7 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
     xWithin && yWithin && zWithin
   }
 
-  override def surfaceNormalAt(local: Coord3): Coord3 = {
+  override def surfaceNormalAt(local: Coord): Coord = {
     // Local coordinates are centered around the box center
     val halfWidth = width / 2
     val halfHeight = height / 2
@@ -54,12 +53,12 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
     // and add some tolerance to ensure consistent results
     val tolerance = 0.5  // Increased tolerance for more consistent results
     val distances = Seq(
-      (dx0, Coord3(-1, 0, 0)),      // -X face
-      (dx1, Coord3(1, 0, 0)),       // +X face
-      (dy0, Coord3(0, -1, 0)),      // -Y face
-      (dy1, Coord3(0, 1, 0)),       // +Y face
-      (dz0, Coord3(0, 0, -1)),      // -Z face
-      (dz1, Coord3(0, 0, 1))        // +Z face
+      (dx0, Coord(-1, 0, 0)),      // -X face
+      (dx1, Coord(1, 0, 0)),       // +X face
+      (dy0, Coord(0, -1, 0)),      // -Y face
+      (dy1, Coord(0, 1, 0)),       // +Y face
+      (dz0, Coord(0, 0, -1)),      // -Z face
+      (dz1, Coord(0, 0, 1))        // +Z face
     )
     
     // Find the face with the smallest distance, with some tolerance for consistency
@@ -71,5 +70,3 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
     bestFace._2
   }
 }
-
-

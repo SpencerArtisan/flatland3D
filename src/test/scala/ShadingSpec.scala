@@ -4,10 +4,10 @@ import org.scalatest.matchers._
 class ShadingSpec extends AnyFlatSpec with should.Matchers {
 
   "Shaded renderer" should "render three faces of a corner-on box with consistent per-face shade" in {
-    val world = World3D(160, 120, 120)
-      .add(Box(1, 40, 40, 40), Coord3(60, 50, 60), Rotation3(Math.PI / 6, Math.PI / 6, Math.PI / 12))
+      val world = World(160, 120, 120)
+    .add(Box(1, 40, 40, 40), Coord(60, 50, 60), Rotation(Math.PI / 6, Math.PI / 6, Math.PI / 12))
 
-    val rendered = Renderer3D.renderShaded(world, lightDirection = Coord3(-1, -1, -1), ambient = 0.35, xScale = 1)
+  val rendered = Renderer.renderShaded(world, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 1)
     val lines = rendered.split("\n")
 
     def charAt(x: Int, y: Int): Char =
@@ -17,26 +17,26 @@ class ShadingSpec extends AnyFlatSpec with should.Matchers {
     val placement = world.placements.head
     val box = placement.shape.asInstanceOf[Box]
 
-    def toScreen(local: Coord3): (Int, Int) = {
+    def toScreen(local: Coord): (Int, Int) = {
       val w = placement.origin + placement.rotation.applyTo(local - box.center)
       (Math.round(w.x).toInt, Math.round(w.y).toInt)
     }
 
-    def faceSamples(localFacePoint: Coord3): Seq[(Int, Int)] = {
-      val offsets = Seq(-6.0, -2.0, 0.0, 2.0, 6.0)
+    def faceSamples(localFacePoint: Coord): Seq[(Int, Int)] = {
+      val offsets = Seq(-6.0, -2.0, 0.0, 6.0)
       for {
         oy <- offsets
         oz <- offsets
-      } yield toScreen(Coord3(localFacePoint.x, localFacePoint.y + oy, localFacePoint.z + oz))
+      } yield toScreen(Coord(localFacePoint.x, localFacePoint.y + oy, localFacePoint.z + oz))
     }
 
     val faces = Seq(
       // +X face
-      ("+X", faceSamples(Coord3(box.width - 0.001, box.height / 2, box.depth / 2))),
+      ("+X", faceSamples(Coord(box.width - 0.001, box.height / 2, box.depth / 2))),
       // +Y face
-      ("+Y", faceSamples(Coord3(box.width / 2, box.height - 0.001, box.depth / 2))),
+      ("+Y", faceSamples(Coord(box.width / 2, box.height - 0.001, box.depth / 2))),
       // +Z face
-      ("+Z", faceSamples(Coord3(box.width / 2, box.height / 2, box.depth - 0.001)))
+      ("+Z", faceSamples(Coord(box.width / 2, box.height / 2, box.depth - 0.001)))
     )
 
     // Keep only faces that appear on screen (non-blank)
