@@ -24,7 +24,7 @@ object Main {
 
   private def buildAnimationFrames3D(world: World3D): Seq[String] =
     LazyList.from(0).map(rotateShapes3D(world, _)).collect {
-      case Right(w) => Renderer3D.renderShaded(w, lightDirection = Coord3(-1, -1, -1), xScale = 2)
+      case Right(w) => Renderer3D.renderShaded(w, lightDirection = Coord3(-1, -1, -1), ambient = 0.35, xScale = 2)
     }
 
   private def animate(frames: Seq[String]): Unit =
