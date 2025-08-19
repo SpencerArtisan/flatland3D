@@ -14,7 +14,7 @@ object Main {
 
   private def buildWorld3D =
     World3D(300, 180, 60)
-      .add(Box(SHAPE_2_ID, 40, 70, 20), Coord3(20, 90, 40), Rotation3.ZERO)
+      .add(Box(SHAPE_2_ID, 40, 70, 20), Coord3(40, 90, 40), Rotation3.ZERO)
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map(rotateShapes(world, _)).collect {

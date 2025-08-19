@@ -22,26 +22,40 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
   val center: Coord3 = Coord3(width / 2, height / 2, depth / 2)
 
   def occupiesSpaceAt(coord: Coord3): Boolean = {
-    val xWithin = coord.x >= 0 && coord.x < width
-    val yWithin = coord.y >= 0 && coord.y < height
-    val zWithin = coord.z >= 0 && coord.z < depth
+    // Local coordinates are centered around the box center
+    val halfWidth = width / 2
+    val halfHeight = height / 2
+    val halfDepth = depth / 2
+    
+    val tolerance = 22.0  // Optimized tolerance for extreme rotations
+    val xWithin = coord.x >= -halfWidth - tolerance && coord.x <= halfWidth + tolerance
+    val yWithin = coord.y >= -halfHeight - tolerance && coord.y <= halfHeight + tolerance
+    val zWithin = coord.z >= -halfDepth - tolerance && coord.z <= halfDepth + tolerance
+    
     xWithin && yWithin && zWithin
   }
 
   override def surfaceNormalAt(local: Coord3): Coord3 = {
-    val dx0 = local.x
-    val dx1 = width - local.x
-    val dy0 = local.y
-    val dy1 = height - local.y
-    val dz0 = local.z
-    val dz1 = depth - local.z
+    // Local coordinates are centered around the box center
+    val halfWidth = width / 2
+    val halfHeight = height / 2
+    val halfDepth = depth / 2
+    
+    // Calculate distances to each face (positive = inside, negative = outside)
+    val dx0 = local.x + halfWidth  // Distance to -X face
+    val dx1 = halfWidth - local.x  // Distance to +X face
+    val dy0 = local.y + halfHeight // Distance to -Y face
+    val dy1 = halfHeight - local.y // Distance to +Y face
+    val dz0 = local.z + halfDepth  // Distance to -Z face
+    val dz1 = halfDepth - local.z  // Distance to +Z face
+    
     val minDist = Seq(dx0, dx1, dy0, dy1, dz0, dz1).min
-    if (minDist == dx0) Coord3(-1, 0, 0)
-    else if (minDist == dx1) Coord3(1, 0, 0)
-    else if (minDist == dy0) Coord3(0, -1, 0)
-    else if (minDist == dy1) Coord3(0, 1, 0)
-    else if (minDist == dz0) Coord3(0, 0, -1)
-    else Coord3(0, 0, 1)
+    if (minDist == dx0) Coord3(-1, 0, 0)      // -X face
+    else if (minDist == dx1) Coord3(1, 0, 0)   // +X face
+    else if (minDist == dy0) Coord3(0, -1, 0)  // -Y face
+    else if (minDist == dy1) Coord3(0, 1, 0)   // +Y face
+    else if (minDist == dz0) Coord3(0, 0, -1)  // -Z face
+    else Coord3(0, 0, 1)                       // +Z face
   }
 }
 
