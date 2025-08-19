@@ -14,7 +14,6 @@ object Main {
 
   private def buildWorld3D =
     World3D(300, 180, 60)
-      .add(Box(SHAPE_1_ID, 80, 40, 30), Coord3(60, 60, 20), Rotation3.ZERO)
       .add(Box(SHAPE_2_ID, 40, 70, 20), Coord3(180, 90, 40), Rotation3.ZERO)
 
   private def buildAnimationFrames(world: World): Seq[String] =
@@ -41,19 +40,11 @@ object Main {
     } yield world2
 
   private def rotateShapes3D(world: World3D, frameIndex: Int): Either[NoSuchShape, World3D] = {
-    val delta1 = Rotation3(
-      yaw = frameIndex * Math.PI / 60,
-      pitch = frameIndex * Math.PI / 90,
-      roll = frameIndex * Math.PI / 120
-    )
-    val delta2 = Rotation3(
+    val delta = Rotation3(
       yaw = frameIndex * Math.PI / -36,
       pitch = 0,
       roll = frameIndex * Math.PI / 72
     )
-    for {
-      w1 <- world.rotate(SHAPE_1_ID, delta1)
-      w2 <- w1.rotate(SHAPE_2_ID, delta2)
-    } yield w2
+    world.rotate(SHAPE_2_ID, delta)
   }
 }
