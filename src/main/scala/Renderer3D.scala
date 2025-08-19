@@ -59,43 +59,50 @@ object Renderer3D {
 
     def shadeAt(p: Coord3): Option[Char] = {
       world.placements.find(_.occupiesSpaceAt(p)).map { placement =>
-        // Binary search along -Z (view direction) to approximate the surface point between outside and inside voxels
-        val viewDir = Coord3(0, 0, -1) // orthographic along -Z
-        val step = 1.0
-        var tOutside = 0.0
-        var tInside = 0.0
-        var found = false
-        // Find a boundary bracket: move forward until outside, then back 1 step inside
-        var t = 0.0
-        while (!found && t > -3.0) { // look up to 3 voxels towards the camera
-          val q = Coord3(p.x + viewDir.x * t, p.y + viewDir.y * t, p.z + viewDir.z * t)
-          if (!placement.occupiesSpaceAt(q)) {
-            tOutside = t
-            tInside = t + step
-            found = true
-          }
-          t -= step
-        }
-        val surfacePoint = if (found) {
-          var a = tOutside
-          var b = tInside
-          var i = 0
-          while (i < 5) { // 5 iterations are enough for sub-voxel precision
-            val m = (a + b) / 2
-            val qm = Coord3(p.x + viewDir.x * m, p.y + viewDir.y * m, p.z + viewDir.z * m)
-            if (placement.occupiesSpaceAt(qm)) b = m else a = m
-            i += 1
-          }
-          Coord3(p.x + viewDir.x * b, p.y + viewDir.y * b, p.z + viewDir.z * b)
-        } else p
+        // Ray-OBB intersection in local space for precise hit and face normal
+        val zFront = world.depth - 1
+        val w0 = Coord3(p.x, p.y, zFront)
+        val w1 = Coord3(p.x, p.y, zFront - 1)
+        val l0 = placement.worldToLocal(w0)
+        val l1 = placement.worldToLocal(w1)
+        val dir = Coord3(l1.x - l0.x, l1.y - l0.y, l1.z - l0.z)
+        val invDir = Coord3(
+          if (dir.x != 0) 1.0 / dir.x else Double.PositiveInfinity,
+          if (dir.y != 0) 1.0 / dir.y else Double.PositiveInfinity,
+          if (dir.z != 0) 1.0 / dir.z else Double.PositiveInfinity
+        )
 
-        // Compute local-space normal via shape API for flat shading when available
-        val local = placement.worldToLocal(surfacePoint)
-        val localNormal = placement.shape.surfaceNormalAt(local)
+        val minX = 0.0; val maxX = placement.shape match { case b: Box => b.width; case _ => Double.PositiveInfinity }
+        val minY = 0.0; val maxY = placement.shape match { case b: Box => b.height; case _ => Double.PositiveInfinity }
+        val minZ = 0.0; val maxZ = placement.shape match { case b: Box => b.depth; case _ => Double.PositiveInfinity }
+
+        val tx1 = (minX - l0.x) * invDir.x; val tx2 = (maxX - l0.x) * invDir.x
+        val tminX = Math.min(tx1, tx2); val tmaxX = Math.max(tx1, tx2)
+        val ty1 = (minY - l0.y) * invDir.y; val ty2 = (maxY - l0.y) * invDir.y
+        val tminY = Math.min(ty1, ty2); val tmaxY = Math.max(ty1, ty2)
+        val tz1 = (minZ - l0.z) * invDir.z; val tz2 = (maxZ - l0.z) * invDir.z
+        val tminZ = Math.min(tz1, tz2); val tmaxZ = Math.max(tz1, tz2)
+
+        val tEnter = Math.max(tminX, Math.max(tminY, tminZ))
+        val tExit = Math.min(tmaxX, Math.min(tmaxY, tmaxZ))
+
+        val localNormal = if (tExit >= tEnter && tExit >= 0) {
+          // Determine which slab provided tEnter
+          val eps = 1e-6
+          if (Math.abs(tEnter - tminX) < eps) Coord3(if (tx1 > tx2) 1 else -1, 0, 0)
+          else if (Math.abs(tEnter - tminY) < eps) Coord3(0, if (ty1 > ty2) 1 else -1, 0)
+          else Coord3(0, 0, if (tz1 > tz2) 1 else -1)
+        } else {
+          // Fallback
+          val centerWorld = placement.origin + placement.shape.center
+          (p - centerWorld).normalize
+        }
         val worldNormal = placement.rotation.applyTo(localNormal).normalize
 
         val ndotl = Math.max(0.0, worldNormal.dot(light))
-        val brightness = Math.min(1.0, Math.max(0.0, ambient + (1.0 - ambient) * ndotl))
+        val brightnessLinear = Math.min(1.0, Math.max(0.0, ambient + (1.0 - ambient) * ndotl))
+        val levels = 4
+        val brightness = Math.round(brightnessLinear * (levels - 1)).toDouble / (levels - 1)
         val idx = Math.min(chars.length - 1, Math.max(0, (brightness * (chars.length - 1)).toInt))
         chars.charAt(idx)
       }
