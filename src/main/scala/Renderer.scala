@@ -5,21 +5,34 @@ object Renderer {
                  blankChar: Char = '.',
                  xScale: Int = 1,
                  nearToFarZs: Seq[Int] = Nil): String = {
+    // Handle empty world case
+    if (world.width == 0 || world.height == 0 || world.depth == 0) {
+      return ""
+    }
+    
     val rows = 0 until world.height
     val columns = 0 until world.width
-    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else 0 until world.depth
+    // Default Z-scan: far-to-near for proper occlusion (first hit = nearest object)
+    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
 
     rows
       .map { row =>
         columns
           .map { column =>
-            val ch = zScan
-              .flatMap { z =>
-                val p = Coord(column, row, z)
-                world.placements.find(_.occupiesSpaceAt(p)).map(charFor)
+            // Scan Z coordinates and stop at first hit for proper occlusion
+            var ch = blankChar
+            var found = false
+            var zIndex = 0
+            while (zIndex < zScan.length && !found) {
+              val z = zScan(zIndex)
+              val p = Coord(column, row, z)
+              val placement = world.placements.find(_.occupiesSpaceAt(p))
+              if (placement.isDefined) {
+                ch = charFor(placement.get)
+                found = true
               }
-              .headOption
-              .getOrElse(blankChar)
+              zIndex += 1
+            }
             ch.toString * xScale
           }
           .mkString
@@ -35,9 +48,15 @@ object Renderer {
                    xScale: Int = 1,
                    nearToFarZs: Seq[Int] = Nil,
                    cullBackfaces: Boolean = true): String = {
+    // Handle empty world case
+    if (world.width == 0 || world.height == 0 || world.depth == 0) {
+      return ""
+    }
+    
     val rows = 0 until world.height
     val columns = 0 until world.width
-    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else 0 until world.depth
+    // Default Z-scan: far-to-near for proper occlusion (first hit = nearest object)
+    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
     val light = lightDirection.normalize
     val viewDirWorld = Coord(0, 0, -1)
 

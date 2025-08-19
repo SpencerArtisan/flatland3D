@@ -26,11 +26,17 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
     val halfHeight = height / 2
     val halfDepth = depth / 2
     
-    // Use no tolerance to ensure the box only occupies space at its exact boundaries
-    val tolerance = 0.0  // No tolerance to fix multiple Z-level issue
-    val xWithin = coord.x >= -halfWidth - tolerance && coord.x <= halfWidth + tolerance
-    val yWithin = coord.y >= -halfHeight - tolerance && coord.y <= halfHeight + tolerance
-    val zWithin = coord.z >= -halfDepth - tolerance && coord.z <= halfDepth + tolerance
+    // Ensure the box only occupies space at integer coordinates to prevent multiple Z-level rendering
+    // Round coordinates to nearest integer to avoid floating-point precision issues
+    val roundedCoord = Coord(
+      Math.round(coord.x).toDouble,
+      Math.round(coord.y).toDouble,
+      Math.round(coord.z).toDouble
+    )
+    
+    val xWithin = roundedCoord.x >= -halfWidth && roundedCoord.x <= halfWidth
+    val yWithin = roundedCoord.y >= -halfHeight && roundedCoord.y <= halfHeight
+    val zWithin = roundedCoord.z >= -halfDepth && roundedCoord.z <= halfDepth
     
     xWithin && yWithin && zWithin
   }
