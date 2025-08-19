@@ -14,7 +14,7 @@ object Main {
 
   private def buildWorld3D =
     World3D(300, 180, 60)
-      .add(Box(SHAPE_2_ID, 40, 70, 20), Coord3(180, 90, 40), Rotation3.ZERO)
+      .add(Box(SHAPE_2_ID, 40, 70, 20), Coord3(20, 90, 40), Rotation3.ZERO)
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map(rotateShapes(world, _)).collect {
@@ -26,12 +26,50 @@ object Main {
       case Right(w) => Renderer3D.renderShaded(w, lightDirection = Coord3(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
     }
 
-  private def animate(frames: Seq[String]): Unit =
+  private def animate(frames: Seq[String]): Unit = {
+    var frameIndex = 0
     frames.foreach { frame =>
       Console.print(CLEAR)
       Console.print(frame)
+      printFrameDiagnostics(frameIndex)
+      frameIndex += 1
       Thread.sleep(66)
     }
+  }
+
+  private def printFrameDiagnostics(frameIndex: Int): Unit = {
+    val world = buildWorld3D
+    val rotatedWorld = rotateShapes3D(world, frameIndex)
+    rotatedWorld match {
+      case Right(w) =>
+        val rendered = Renderer3D.renderShaded(w, lightDirection = Coord3(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
+        val lines = rendered.split("\n")
+        
+        // Find bounding box of rendered content
+        var minX = Int.MaxValue
+        var maxX = Int.MinValue
+        var minY = Int.MaxValue
+        var maxY = Int.MinValue
+        
+        for (y <- lines.indices; x <- lines(y).indices) {
+          if (lines(y)(x) != ' ') {
+            minX = Math.min(minX, x)
+            maxX = Math.max(maxX, x)
+            minY = Math.min(minY, y)
+            maxY = Math.max(maxY, y)
+          }
+        }
+        
+        if (minX != Int.MaxValue) {
+          val width = maxX - minX + 1
+          val height = maxY - minY + 1
+          println(s"\nFrame $frameIndex: bounds ${width}x${height} at ($minX,$minY), aspect ${width.toDouble / height}")
+        }
+        
+      case Left(error) =>
+        println(s"\nFrame $frameIndex: Error - $error")
+    }
+  }
 
   private def rotateShapes(world: World, frameIndex: Int): Either[NoSuchShape, World] =
     for {
