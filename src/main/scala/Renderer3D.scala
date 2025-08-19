@@ -44,6 +44,42 @@ object Renderer3D {
       }
       .mkString("\n")
   }
+
+  // Very simple Lambert-like shading for boxes: approximate per-voxel normal by comparing to shape center.
+  def renderShaded(world: World3D,
+                   lightDirection: Coord3 = Coord3(0, 0, -1),
+                   chars: String = " .:-=+*#%@",
+                   xScale: Int = 1,
+                   nearToFarZs: Seq[Int] = Nil): String = {
+    val rows = 0 until world.height
+    val columns = 0 until world.width
+    val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
+    val light = lightDirection.normalize
+
+    def shadeAt(p: Coord3): Option[Char] = {
+      world.placements.find(_.occupiesSpaceAt(p)).map { placement =>
+        val centerWorld = placement.origin + placement.shape.center
+        val normalApprox = (p - centerWorld).normalize
+        val ndotl = Math.max(0.0, normalApprox.dot(light))
+        val idx = Math.min(chars.length - 1, Math.max(0, (ndotl * (chars.length - 1)).toInt))
+        chars.charAt(idx)
+      }
+    }
+
+    rows
+      .map { row =>
+        columns
+          .map { column =>
+            val ch = zScan
+              .flatMap { z => shadeAt(Coord3(column, row, z)) }
+              .headOption
+              .getOrElse(' ')
+            ch.toString * xScale
+          }
+          .mkString
+      }
+      .mkString("\n")
+  }
 }
 
 
