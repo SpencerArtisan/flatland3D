@@ -35,20 +35,15 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
         testCoords.foreach { coord =>
           val localCoord = placement.worldToLocal(coord)
           val isOccupied = placement.occupiesSpaceAt(coord)
-          println(s"World $coord -> Local $localCoord, Occupied: $isOccupied")
         }
         
-        // Debug: Test Y coordinates systematically
-        println(s"\nDebug: Testing Y coordinates systematically")
         for (y <- 50 to 130 by 5) {
           val coord = Coord(20, y, 40)
           val localCoord = placement.worldToLocal(coord)
           val isOccupied = placement.occupiesSpaceAt(coord)
-          println(s"Y=$y: World $coord -> Local $localCoord, Occupied: $isOccupied")
         }
         
         // Debug: Test if renderer finds all occupied coordinates
-        println(s"\nDebug: Testing renderer coordinate finding")
         var foundCoords = 0
         var totalTested = 0
         for (y <- 50 to 130) {
@@ -59,41 +54,27 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
               foundCoords += 1
               if (foundCoords <= 10) { // Only print first 10 for brevity
                 val localCoord = placement.worldToLocal(coord)
-                println(s"Found occupied: World $coord -> Local $localCoord")
               }
             }
           }
         }
-        println(s"Total coordinates tested: $totalTested, Found occupied: $foundCoords")
         
-        // Debug: Test specific Z coordinates to see if Z-scan is the issue
-        println(s"\nDebug: Testing Z coordinates for specific (x,y) points")
         val testPoints = Seq(
           Coord(20, 90, 40),   // Origin
           Coord(20, 60, 40),   // Should be inside
           Coord(20, 120, 40),  // Should be inside
         )
         testPoints.foreach { point =>
-          println(s"\nTesting Z-scan for point $point:")
           for (z <- 30 to 50) {
             val testPoint = Coord(point.x, point.y, z)
             val localCoord = placement.worldToLocal(testPoint)
             val isOccupied = placement.occupiesSpaceAt(testPoint)
-            println(s"  Z=$z: Local $localCoord, Occupied: $isOccupied")
           }
         }
         
         val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
         val lines = rendered.split("\n")
 
-        // Print the actual rendered output
-        println("=== SHAPE 101 FRAME 190 RENDERED OUTPUT ===")
-        lines.zipWithIndex.foreach { case (line, i) =>
-          if (line.trim.nonEmpty) {
-            println(f"$i%3d: $line")
-          }
-        }
-        println("=== END SHAPE 101 OUTPUT ===")
 
         // Find bounding box of rendered content
         var minX = Int.MaxValue
@@ -115,7 +96,6 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           val height = maxY - minY + 1
           val aspectRatio = width.toDouble / height
 
-          println(s"Shape 101 frame 190 rendered bounds: ${width}x${height} at ($minX,$minY), aspect ratio: $aspectRatio")
           
           // The issue has been fixed! The rendering should now be much more reasonable
           withClue(s"Frame 190 should now render correctly: ") {
@@ -150,26 +130,12 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
       case Right(w) =>
         // Debug: Test coordinate finding for frame 12
         val placement = w.placements.head
-        println(s"Debug: Testing coordinate finding for frame 12")
-        println(s"Placement origin: ${placement.origin}")
-        println(s"Placement rotation: ${placement.rotation}")
-        println(s"Box dimensions: ${placement.shape.asInstanceOf[Box].width} x ${placement.shape.asInstanceOf[Box].height} x ${placement.shape.asInstanceOf[Box].depth}")
         
         // Test the transformation step by step for Y=50, Z=40
-        println(s"\nDebug: Testing transformation step by step for Y=50, Z=40")
         val testCoord = Coord(40, 50, 40)
-        println(s"World coordinate: $testCoord")
-        println(s"Origin: ${placement.origin}")
         val translated = testCoord - placement.origin
-        println(s"After translation: $translated")
         val inverseRotation = Rotation(-placement.rotation.yaw, -placement.rotation.pitch, -placement.rotation.roll)
-        println(s"Inverse rotation: $inverseRotation")
         val localCoord = inverseRotation.applyTo(translated)
-        println(s"After inverse rotation: $localCoord")
-        println(s"Expected local X range: [-20, 20], Y range: [-35, 35], Z range: [-10, 10]")
-        println(s"Is X within range? ${localCoord.x >= -20 && localCoord.x <= 20}")
-        println(s"Is Y within range? ${localCoord.y >= -35 && localCoord.y <= 35}")
-        println(s"Is Z within range? ${localCoord.z >= -10 && localCoord.z <= 10}")
         
         // Test coordinates systematically to see where the cutoff is
         var foundCoords = 0
@@ -187,43 +153,29 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
               lastOccupiedY = Math.max(lastOccupiedY, y)
               if (foundCoords <= 5) { // Only print first 5 for brevity
                 val localCoord = placement.worldToLocal(coord)
-                println(s"Found occupied: World $coord -> Local $localCoord")
               }
             }
           }
         }
         
-        println(s"Total coordinates tested: $totalTested, Found occupied: $foundCoords")
-        println(s"Y range: $firstOccupiedY to $lastOccupiedY")
         
         // Debug: Test different Z coordinates to see if the issue is in the Z-scan
-        println(s"\nDebug: Testing different Z coordinates for Y=50 (should be inside box)")
         for (z <- 30 to 50) {
           val coord = Coord(40, 50, z)  // Test at box center X,Y, various Z
           val localCoord = placement.worldToLocal(coord)
           val isOccupied = placement.occupiesSpaceAt(coord)
-          println(s"Z=$z: World $coord -> Local $localCoord, Occupied: $isOccupied")
         }
         
-        println(s"\nDebug: Testing different Z coordinates for Y=70 (should be inside box)")
         for (z <- 30 to 50) {
           val coord = Coord(40, 70, z)  // Test at box center X,Y, various Z
           val localCoord = placement.worldToLocal(coord)
           val isOccupied = placement.occupiesSpaceAt(coord)
-          println(s"Z=$z: World $coord -> Local $localCoord, Occupied: $isOccupied")
         }
         
         val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
         val lines = rendered.split("\n")
 
         // Print the actual rendered output
-        println("=== SHAPE 101 FRAME 12 RENDERED OUTPUT ===")
-        lines.zipWithIndex.foreach { case (line, i) =>
-          if (line.trim.nonEmpty) {
-            println(f"$i%3d: $line")
-          }
-        }
-        println("=== END SHAPE 101 OUTPUT ===")
 
         // Find bounding box of rendered content
         var minX = Int.MaxValue
@@ -245,7 +197,6 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           val height = maxY - minY + 1
           val aspectRatio = width.toDouble / height
 
-          println(s"Shape 101 frame 12 rendered bounds: ${width}x${height} at ($minX,$minY), aspect ratio: $aspectRatio")
           
           // This should reproduce the issue: content starts too low (minY too high)
           withClue(s"Frame 12 should show truncation issue: ") {
@@ -282,10 +233,6 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
       case Right(w) =>
         // Debug: Test what coordinates are being found as occupied in frame 29
         val placement = w.placements.head
-        println(s"Debug: Testing coordinate finding for frame 29")
-        println(s"Placement origin: ${placement.origin}")
-        println(s"Placement rotation: ${placement.rotation}")
-        println(s"Box dimensions: ${placement.shape.asInstanceOf[Box].width} x ${placement.shape.asInstanceOf[Box].height} x ${placement.shape.asInstanceOf[Box].depth}")
         
         // Test coordinates systematically to see where the cutoff is
         var foundCoords = 0
@@ -303,26 +250,16 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
               lastOccupiedY = Math.max(lastOccupiedY, y)
               if (foundCoords <= 5) { // Only print first 5 for brevity
                 val localCoord = placement.worldToLocal(coord)
-                println(s"Found occupied: World $coord -> Local $localCoord")
               }
             }
           }
         }
         
-        println(s"Total coordinates tested: $totalTested, Found occupied: $foundCoords")
-        println(s"Y range: $firstOccupiedY to $lastOccupiedY")
         
         val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
         val lines = rendered.split("\n")
 
         // Print the actual rendered output
-        println("=== SHAPE 101 FRAME 29 RENDERED OUTPUT ===")
-        lines.zipWithIndex.foreach { case (line, i) =>
-          if (line.trim.nonEmpty) {
-            println(f"$i%3d: $line")
-          }
-        }
-        println("=== END SHAPE 101 OUTPUT ===")
 
         // Find bounding box of rendered content
         var minX = Int.MaxValue
@@ -344,7 +281,6 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           val height = maxY - minY + 1
           val aspectRatio = width.toDouble / height
 
-          println(s"Shape 101 frame 29 rendered bounds: ${width}x${height} at ($minX,$minY), aspect ratio: $aspectRatio")
           
           // This should reproduce the issues: severe truncation and poor shading
           withClue(s"Frame 29 should show truncation and shading issues: ") {
@@ -415,9 +351,6 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
       }
     }
     
-    println(s"Z coordinate range across all test frames: $minZ to $maxZ")
-    println(s"Minimum Z occurs at frame $frameWithMinZ")
-    println(s"Maximum Z occurs at frame $frameWithMaxZ")
     
     // The box should never go below Z=0 in world coordinates
     withClue(s"Box should never have negative Z coordinates in world space: ") {
