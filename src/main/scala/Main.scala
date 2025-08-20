@@ -16,47 +16,10 @@ object Main {
     }
 
   private def animate(frames: Seq[String]): Unit = {
-    var frameIndex = 0
     frames.foreach { frame =>
       Console.print(CLEAR)
       Console.print(frame)
-      printFrameDiagnostics(frameIndex)
-      frameIndex += 1
       Thread.sleep(66)
-    }
-  }
-
-  private def printFrameDiagnostics(frameIndex: Int): Unit = {
-    val world = buildWorld
-    val rotatedWorld = rotateShapes(world, frameIndex)
-    rotatedWorld match {
-      case Right(w) =>
-        val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
-        val lines = rendered.split("\n")
-        
-        // Find bounding box of rendered content
-        var minX = Int.MaxValue
-        var maxX = Int.MinValue
-        var minY = Int.MaxValue
-        var maxY = Int.MinValue
-        
-        for (y <- lines.indices; x <- lines(y).indices) {
-          if (lines(y)(x) != ' ') {
-            minX = Math.min(minX, x)
-            maxX = Math.max(maxX, x)
-            minY = Math.min(minY, y)
-            maxY = Math.max(maxY, y)
-          }
-        }
-        
-        if (minX != Int.MaxValue) {
-          val width = maxX - minX + 1
-          val height = maxY - minY + 1
-          println(s"\nFrame $frameIndex: bounds ${width}x${height} at ($minX,$minY), aspect ${width.toDouble / height}")
-        }
-        
-      case Left(error) =>
-        println(s"\nFrame $frameIndex: Error - $error")
     }
   }
 
