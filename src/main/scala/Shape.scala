@@ -47,31 +47,20 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
   }
   
   private def findClosestFaceNormal(point: Coord, halfWidth: Double, halfHeight: Double, halfDepth: Double): Coord = {
-    val xTolerance = halfWidth * 0.3
-    val yTolerance = halfHeight * 0.3  
-    val zTolerance = halfDepth * 0.3
+    // Use dominant axis approach: whichever coordinate is closest to its maximum extent determines the face
+    val xDistance = Math.abs(Math.abs(point.x) - halfWidth)
+    val yDistance = Math.abs(Math.abs(point.y) - halfHeight)  
+    val zDistance = Math.abs(Math.abs(point.z) - halfDepth)
     
-    if (isNearFace(point.x, halfWidth, xTolerance)) {
+    val minDistance = Math.min(xDistance, Math.min(yDistance, zDistance))
+    
+    if (xDistance == minDistance) {
       if (point.x > 0) Coord(1, 0, 0) else Coord(-1, 0, 0)
-    } else if (isNearFace(point.y, halfHeight, yTolerance)) {
+    } else if (yDistance == minDistance) {
       if (point.y > 0) Coord(0, 1, 0) else Coord(0, -1, 0)  
-    } else if (isNearFace(point.z, halfDepth, zTolerance)) {
-      if (point.z > 0) Coord(0, 0, 1) else Coord(0, 0, -1)
     } else {
-      fallbackToClosestFace(point, halfWidth, halfHeight, halfDepth)
+      if (point.z > 0) Coord(0, 0, 1) else Coord(0, 0, -1)
     }
-  }
-  
-  private def isNearFace(coordinate: Double, halfSize: Double, tolerance: Double): Boolean =
-    Math.abs(Math.abs(coordinate) - halfSize) <= tolerance
-    
-  private def fallbackToClosestFace(point: Coord, halfWidth: Double, halfHeight: Double, halfDepth: Double): Coord = {
-    val distancesToFaces = Seq(
-      (Math.abs(Math.abs(point.x) - halfWidth), if (point.x > 0) Coord(1, 0, 0) else Coord(-1, 0, 0)),
-      (Math.abs(Math.abs(point.y) - halfHeight), if (point.y > 0) Coord(0, 1, 0) else Coord(0, -1, 0)),
-      (Math.abs(Math.abs(point.z) - halfDepth), if (point.z > 0) Coord(0, 0, 1) else Coord(0, 0, -1))
-    )
-    distancesToFaces.minBy(_._1)._2
   }
 
 }
