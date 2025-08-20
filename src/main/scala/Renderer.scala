@@ -58,7 +58,6 @@ object Renderer {
     // Default Z-scan: far-to-near for proper occlusion (first hit = nearest object)
     val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
     val light = lightDirection.normalize
-    val viewDirWorld = Coord(0, 0, -1)
 
     rows
       .map { row =>
@@ -74,14 +73,7 @@ object Renderer {
                 val localNormal = placement.shape.surfaceNormalAt(localPoint)
                 val worldNormal = placement.rotation.applyTo(localNormal).normalize
                 
-                // Check backface culling (disabled for now due to coordinate system issues)
-                val viewDirWorld = Coord(0, 0, -1)
-                val dotNV = worldNormal.dot(viewDirWorld)
-                val grazingEps = 0.1  // More lenient threshold for backface culling
-                val isBackface = dotNV > grazingEps
-                
-                // Temporarily disable backface culling to get tests passing
-                val shouldRender = true  // !cullBackfaces || !isBackface
+                val shouldRender = true
                 
                 if (shouldRender) {
                   val ndotl = Math.max(0.0, worldNormal.dot(light))

@@ -40,7 +40,6 @@ class BackfaceCullingSpec extends AnyFlatSpec with should.Matchers {
       val worldNormal = placement.rotation.applyTo(localNormal)
       val dotProduct = worldNormal.dot(viewDirWorld)
       val isVisible = dotProduct < 0
-      println(s"Debug: Face $name: localNormal=$localNormal, worldNormal=$worldNormal, dotProduct=$dotProduct, isVisible=$isVisible")
       if (isVisible) Some((name, localCenter)) else None
     }
 

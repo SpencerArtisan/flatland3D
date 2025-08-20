@@ -18,9 +18,7 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
 
     rotatedWorld match {
       case Right(w) =>
-        // Debug: Test specific world coordinates to see what's happening
         val placement = w.placements.head
-        println(s"Debug: Testing specific world coordinates for shape 101")
         
         // Test coordinates around the expected bounds
         val testCoords = Seq(
