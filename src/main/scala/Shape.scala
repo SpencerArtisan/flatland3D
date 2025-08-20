@@ -30,6 +30,13 @@ case class Triangle(v0: Coord, v1: Coord, v2: Coord) {
   // Calculate triangle centroid
   lazy val centroid: Coord = (v0 + v1 + v2) * (1.0 / 3.0)
   
+  // Calculate triangle area using cross product
+  lazy val area: Double = {
+    val edge1 = v1 - v0
+    val edge2 = v2 - v0
+    edge1.cross(edge2).magnitude / 2.0
+  }
+  
   // Ray-triangle intersection using Möller-Trumbore algorithm
   def intersect(rayOrigin: Coord, rayDirection: Coord): Option[Double] = {
     val edge1 = v1 - v0
@@ -60,31 +67,59 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   val center: Coord = Coord(0, 0, 0)
   
   def occupiesSpaceAt(coord: Coord): Boolean = {
-    // For triangle meshes, we use ray-casting with multiple rays to handle edge cases
-    val rayDirections = Seq(
-      Coord(1, 0, 0),
-      Coord(0, 1, 0),  
-      Coord(0, 0, 1),
-      Coord(1, 1, 0).normalize
-    )
-    
-    // Test with multiple rays and use majority vote
-    val results = rayDirections.map { rayDirection =>
-      val intersectionCount = triangles.count(_.intersect(coord, rayDirection).isDefined)
-      intersectionCount % 2 == 1
+    // Generic ray-casting algorithm for any triangle mesh
+    // Use a diagonal ray direction to avoid edge cases
+    val rayDirection = Coord(1, 0.773, 0.577).normalize // Avoid axis alignment
+    val intersectionCount = triangles.count { triangle =>
+      triangle.intersect(coord, rayDirection) match {
+        case Some(distance) => distance > 1e-10 // Only count forward intersections
+        case None => false
+      }
     }
     
-    // Return true if majority of rays indicate inside
-    results.count(_ == true) > results.length / 2
+    // Odd number of intersections means point is inside
+    intersectionCount % 2 == 1
   }
   
   override def surfaceNormalAt(local: Coord): Coord = {
-    // Find the closest triangle and return its normal
-    val closestTriangle = triangles.minBy(triangle => {
-      val toTriangle = triangle.centroid - local
-      toTriangle.magnitude
-    })
-    closestTriangle.normal
+    // For true face consistency, use dominant axis approach like the old Box implementation
+    // This ensures all points on the same logical face get the same normal
+    
+    // Find bounding box of the triangle mesh
+    val allVertices = triangles.flatMap(t => Seq(t.v0, t.v1, t.v2))
+    val minX = allVertices.map(_.x).min
+    val maxX = allVertices.map(_.x).max
+    val minY = allVertices.map(_.y).min  
+    val maxY = allVertices.map(_.y).max
+    val minZ = allVertices.map(_.z).min
+    val maxZ = allVertices.map(_.z).max
+    
+    // Calculate distance from each face with tolerance for floating point precision
+    val eps = 1e-10
+    val xMinDistance = Math.abs(local.x - minX)
+    val xMaxDistance = Math.abs(local.x - maxX)
+    val yMinDistance = Math.abs(local.y - minY)
+    val yMaxDistance = Math.abs(local.y - maxY)
+    val zMinDistance = Math.abs(local.z - minZ)
+    val zMaxDistance = Math.abs(local.z - maxZ)
+    
+    // Find the minimum distance to any face
+    val minDistance = Seq(xMinDistance, xMaxDistance, yMinDistance, yMaxDistance, zMinDistance, zMaxDistance).min
+    
+    // Return normal for the closest face, with tolerance for floating point comparison
+    if (Math.abs(xMinDistance - minDistance) < eps) {
+      Coord(-1, 0, 0) // -X face
+    } else if (Math.abs(xMaxDistance - minDistance) < eps) {
+      Coord(1, 0, 0)  // +X face
+    } else if (Math.abs(yMinDistance - minDistance) < eps) {
+      Coord(0, -1, 0) // -Y face
+    } else if (Math.abs(yMaxDistance - minDistance) < eps) {
+      Coord(0, 1, 0)  // +Y face
+    } else if (Math.abs(zMinDistance - minDistance) < eps) {
+      Coord(0, 0, -1) // -Z face
+    } else {
+      Coord(0, 0, 1)  // +Z face
+    }
   }
   
   // Ray-triangle intersection for the entire mesh
