@@ -66,7 +66,7 @@ sbt test
 The main demo can be customized by modifying `Main.scala`:
 
 - **World size**: `World(width, height, depth)`
-- **Shape dimensions**: `Box(id, width, height, depth)`
+- **Shape creation**: `TriangleShapes.cube(id, size)` for cubes, `TriangleShapes.tetrahedron(id, size)`, etc.
 - **Animation speed**: `Thread.sleep(milliseconds)`
 - **Lighting**: `lightDirection` and `ambient` parameters
 - **Rendering**: `xScale` scaling option

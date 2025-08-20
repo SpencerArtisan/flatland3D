@@ -126,54 +126,16 @@ object Renderer {
                                    ambient: Double,
                                    frameBuffer: Array[Array[Char]], 
                                    depthBuffer: Array[Array[Double]]): Unit = {
-    val box = placement.shape.asInstanceOf[Box]
-    enumerateCanonicalVoxels(box).foreach { canonicalVoxel =>
-      val worldPoint = transformVoxelToWorld(canonicalVoxel, placement)
-      val screenPixel = projectToScreen(worldPoint)
-      
-      if (isWithinScreenBounds(screenPixel, frameBuffer) && shouldRenderAtDepth(worldPoint.z, screenPixel, depthBuffer)) {
-        val shadingChar = calculateVoxelShading(canonicalVoxel, box, light, placement, ambient, chars)
-        renderPixelToBuffer(screenPixel, shadingChar, worldPoint.z, frameBuffer, depthBuffer)
-      }
+    placement.shape match {
+      case triangleMesh: TriangleMesh =>
+        renderTriangleMeshForward(triangleMesh, placement, light, chars, ambient, frameBuffer, depthBuffer)
+      case _ =>
+        throw new IllegalArgumentException(s"Unsupported shape type: ${placement.shape.getClass.getSimpleName}")
     }
   }
 
-  private def enumerateCanonicalVoxels(box: Box): Seq[Coord] = {
-    val halfWidth = (box.width / 2).toInt
-    val halfHeight = (box.height / 2).toInt  
-    val halfDepth = (box.depth / 2).toInt
-    
-    for {
-      x <- -halfWidth to halfWidth
-      y <- -halfHeight to halfHeight
-      z <- -halfDepth to halfDepth
-      voxel = Coord(x, y, z)
-      if box.occupiesSpaceAt(voxel)
-    } yield voxel
-  }
 
-  private def transformVoxelToWorld(canonicalVoxel: Coord, placement: Placement): Coord =
-    placement.rotation.applyTo(canonicalVoxel) + placement.origin
 
-  private def projectToScreen(worldPoint: Coord): (Int, Int) =
-    (Math.round(worldPoint.x).toInt, Math.round(worldPoint.y).toInt)
-
-  private def isWithinScreenBounds(screenPixel: (Int, Int), frameBuffer: Array[Array[Char]]): Boolean = {
-    val (x, y) = screenPixel
-    y >= 0 && y < frameBuffer.length && x >= 0 && x < frameBuffer(0).length
-  }
-
-  private def shouldRenderAtDepth(depth: Double, screenPixel: (Int, Int), depthBuffer: Array[Array[Double]]): Boolean = {
-    val (x, y) = screenPixel
-    depth < depthBuffer(y)(x)
-  }
-
-  private def calculateVoxelShading(canonicalVoxel: Coord, box: Box, worldLight: Coord, placement: Placement, ambient: Double, chars: String): Char = {
-    val localNormal = box.surfaceNormalAt(canonicalVoxel)
-    val localLight = transformLightToShapeSpace(worldLight, placement.rotation)
-    val brightness = calculateLambertianBrightness(localNormal, localLight, ambient)
-    brightnessToCharacter(brightness, chars)
-  }
 
   private def renderPixelToBuffer(screenPixel: (Int, Int), 
                                 char: Char, 
@@ -187,4 +149,42 @@ object Renderer {
 
   private def frameBufferToString(frameBuffer: Array[Array[Char]], xScale: Int): String =
     frameBuffer.map(_.map(_.toString * xScale).mkString).mkString("\n")
+
+  private def renderTriangleMeshForward(triangleMesh: TriangleMesh,
+                                      placement: Placement,
+                                      light: Coord,
+                                      chars: String,
+                                      ambient: Double,
+                                      frameBuffer: Array[Array[Char]],
+                                      depthBuffer: Array[Array[Double]]): Unit = {
+    // For triangle meshes, cast rays from screen pixels to find intersections
+    for {
+      y <- frameBuffer.indices
+      x <- frameBuffer(y).indices
+    } {
+      val screenCoord = Coord(x, y, 0)
+      val rayDirection = Coord(0, 0, 1) // Ray pointing into screen
+      
+      // Transform ray to shape's local coordinate system
+      val worldRayOrigin = screenCoord
+      val localRayOrigin = placement.rotation.inverse.applyTo(worldRayOrigin - placement.origin)
+      val localRayDirection = placement.rotation.inverse.applyTo(rayDirection)
+      
+      // Find closest intersection with triangle mesh
+      triangleMesh.intersectRay(localRayOrigin, localRayDirection) match {
+        case Some((distance, triangle)) =>
+          val worldZ = screenCoord.z + distance
+          if (worldZ < depthBuffer(y)(x)) {
+            val surfaceNormal = triangle.normal
+            val transformedLight = transformLightToShapeSpace(light, placement.rotation)
+            val brightness = calculateLambertianBrightness(surfaceNormal, transformedLight, ambient)
+            val shadingChar = brightnessToCharacter(brightness, chars)
+            
+            frameBuffer(y)(x) = shadingChar
+            depthBuffer(y)(x) = worldZ
+          }
+        case None => // No intersection, leave pixel unchanged
+      }
+    }
+  }
 }

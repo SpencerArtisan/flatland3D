@@ -8,7 +8,7 @@ object Main {
 
   private def buildWorld =
     World(300, 180, 60)
-      .add(Box(SHAPE_ID, 40, 70, 20), Coord(40, 90, 40), Rotation.ZERO)
+      .add(TriangleShapes.cube(SHAPE_ID, 40), Coord(40, 90, 40), Rotation.ZERO)
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map(rotateShapes(world, _)).collect {
@@ -32,7 +32,7 @@ object Main {
     )
     
     // Reset to start position and apply the total rotation
-    val worldWithReset = world.reset.add(Box(SHAPE_ID, 40, 70, 20), Coord(40, 90, 40), totalRotation)
+    val worldWithReset = world.reset.add(TriangleShapes.cube(SHAPE_ID, 40), Coord(40, 90, 40), totalRotation)
     Right(worldWithReset)
   }
 }

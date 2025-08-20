@@ -25,28 +25,20 @@ case class Placement(origin: Coord, rotation: Rotation, shape: Shape) {
   
   // Check if this placement would extend beyond world boundaries
   def wouldExtendBeyondBounds(worldWidth: Int, worldHeight: Int, worldDepth: Int): Boolean = {
-    val box = shape.asInstanceOf[Box]
-    val halfWidth = box.width / 2
-    val halfHeight = box.height / 2
-    val halfDepth = box.depth / 2
-    
-    // Check all 8 corners of the box after rotation
-    val corners = Seq(
-      Coord(-halfWidth, -halfHeight, -halfDepth),
-      Coord(halfWidth, -halfHeight, -halfDepth),
-      Coord(-halfWidth, halfHeight, -halfDepth),
-      Coord(halfWidth, halfHeight, -halfDepth),
-      Coord(-halfWidth, -halfHeight, halfDepth),
-      Coord(halfWidth, -halfHeight, halfDepth),
-      Coord(-halfWidth, halfHeight, halfDepth),
-      Coord(halfWidth, halfHeight, halfDepth)
-    )
-    
-    corners.exists { localCorner =>
-      val worldCorner = rotation.applyTo(localCorner) + origin
-      worldCorner.x < 0 || worldCorner.x >= worldWidth ||
-      worldCorner.y < 0 || worldCorner.y >= worldHeight ||
-      worldCorner.z < 0 || worldCorner.z >= worldDepth
+    shape match {
+      case triangleMesh: TriangleMesh =>
+        // Check all vertices of the triangle mesh
+        val vertices = triangleMesh.triangles.flatMap { triangle =>
+          Seq(triangle.v0, triangle.v1, triangle.v2)
+        }.distinct
+        
+        vertices.exists { localVertex =>
+          val worldVertex = rotation.applyTo(localVertex) + origin
+          worldVertex.x < 0 || worldVertex.x >= worldWidth ||
+          worldVertex.y < 0 || worldVertex.y >= worldHeight ||
+          worldVertex.z < 0 || worldVertex.z >= worldDepth
+        }
+      case _ => false // Unknown shape type
     }
   }
 }

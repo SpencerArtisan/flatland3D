@@ -5,7 +5,7 @@ class ShadingSpec extends AnyFlatSpec with should.Matchers {
 
   "Shaded renderer" should "render three faces of a corner-on box with consistent per-face shade" in {
       val world = World(160, 120, 120)
-    .add(Box(1, 40, 40, 40), Coord(60, 50, 60), Rotation(Math.PI / 6, Math.PI / 6, Math.PI / 12))
+    .add(TriangleShapes.cube(1, 40), Coord(60, 50, 60), Rotation(Math.PI / 6, Math.PI / 6, Math.PI / 12))
 
   val rendered = Renderer.renderShadedForward(world, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 1)
     val lines = rendered.split("\n")
@@ -15,10 +15,11 @@ class ShadingSpec extends AnyFlatSpec with should.Matchers {
 
     // Sample multiple points per face by picking local face points and mapping to screen (x,y)
     val placement = world.placements.head
-    val box = placement.shape.asInstanceOf[Box]
+    val triangleMesh = placement.shape.asInstanceOf[TriangleMesh]
+    val cubeSize = 40.0 // The cube size we used
 
     def toScreen(local: Coord): (Int, Int) = {
-      val w = placement.origin + placement.rotation.applyTo(local - box.center)
+      val w = placement.origin + placement.rotation.applyTo(local - triangleMesh.center)
       (Math.round(w.x).toInt, Math.round(w.y).toInt)
     }
 
@@ -32,11 +33,11 @@ class ShadingSpec extends AnyFlatSpec with should.Matchers {
 
     val faces = Seq(
       // +X face
-      ("+X", faceSamples(Coord(box.width / 2 - 0.001, 0, 0))),
+      ("+X", faceSamples(Coord(cubeSize / 2 - 0.001, 0, 0))),
       // +Y face
-      ("+Y", faceSamples(Coord(0, box.height / 2 - 0.001, 0))),
+      ("+Y", faceSamples(Coord(0, cubeSize / 2 - 0.001, 0))),
       // +Z face
-      ("+Z", faceSamples(Coord(0, 0, box.depth / 2 - 0.001)))
+      ("+Z", faceSamples(Coord(0, 0, cubeSize / 2 - 0.001)))
     )
 
     // Keep only faces that appear on screen (non-blank)

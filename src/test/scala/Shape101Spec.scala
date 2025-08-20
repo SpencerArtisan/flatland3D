@@ -6,7 +6,7 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
   "Shape 101" should "reproduce frame 190 truncation and bulge issue" in {
     // Reproduce exact conditions from frame 190
     val world = World(300, 180, 60)
-      .add(Box(101, 40.0, 70.0, 20.0), Coord(20.0, 90.0, 40.0), Rotation.ZERO)
+      .add(TriangleShapes.cube(101, 40), Coord(20.0, 90.0, 40.0), Rotation.ZERO)
 
     // Apply the rotation that would occur at frame 190
     val frame190Rotation = Rotation(
@@ -116,7 +116,7 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
   "Shape 101" should "reproduce frame 12 truncation issue" in {
     // Reproduce exact conditions from frame 12
     val world = World(300, 180, 60)
-      .add(Box(101, 40.0, 70.0, 20.0), Coord(40.0, 90.0, 40.0), Rotation.ZERO)
+      .add(TriangleShapes.cube(101, 40), Coord(40.0, 90.0, 40.0), Rotation.ZERO)
 
     // Apply the rotation that would occur at frame 12
     val frame12Rotation = Rotation(
@@ -219,7 +219,7 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
   "Shape 101" should "reproduce frame 29 truncation and shading issues" in {
     // Reproduce exact conditions from frame 29
     val world = World(300, 180, 60)
-      .add(Box(101, 40.0, 70.0, 20.0), Coord(40.0, 90.0, 40.0), Rotation.ZERO)
+      .add(TriangleShapes.cube(101, 40), Coord(40.0, 90.0, 40.0), Rotation.ZERO)
 
     // Apply the rotation that would occur at frame 29
     val frame29Rotation = Rotation(
@@ -302,8 +302,8 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
 
   "Shape 101" should "check Z coordinate bounds for rotated shape 101" in {
     val world = World(300, 180, 60)
-      .add(Box(101, 40.0, 70.0, 20.0), Coord(40.0, 90.0, 40.0), Rotation.ZERO)
-    val box = world.placements.head.shape.asInstanceOf[Box]
+      .add(TriangleShapes.cube(101, 40), Coord(40.0, 90.0, 40.0), Rotation.ZERO)
+    val triangleMesh = world.placements.head.shape.asInstanceOf[TriangleMesh]
     
     // Test various rotation angles to see if any part goes below Z=0
     val testFrames = Seq(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200)
@@ -323,26 +323,19 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
         case Right(w) =>
           val rotatedPlacement = w.placements.head
           
-          // Check all corners of the box in local coordinates
-          val localCorners = Seq(
-            Coord(-box.width/2, -box.height/2, -box.depth/2),  // Bottom-back-left
-            Coord(box.width/2, -box.height/2, -box.depth/2),   // Bottom-back-right
-            Coord(-box.width/2, box.height/2, -box.depth/2),   // Bottom-front-left
-            Coord(box.width/2, box.height/2, -box.depth/2),    // Bottom-front-right
-            Coord(-box.width/2, -box.height/2, box.depth/2),   // Top-back-left
-            Coord(box.width/2, -box.height/2, box.depth/2),    // Top-back-right
-            Coord(-box.width/2, box.height/2, box.depth/2),    // Top-front-left
-            Coord(box.width/2, box.height/2, box.depth/2)     // Top-front-right
-          )
+          // Check all vertices of the triangle mesh
+          val localVertices = triangleMesh.triangles.flatMap { triangle =>
+            Seq(triangle.v0, triangle.v1, triangle.v2)
+          }.distinct
           
-          localCorners.foreach { localCorner =>
-            val worldCorner = rotatedPlacement.rotation.applyTo(localCorner) + rotatedPlacement.origin
-            if (worldCorner.z < minZ) {
-              minZ = worldCorner.z
+          localVertices.foreach { localVertex =>
+            val worldVertex = rotatedPlacement.rotation.applyTo(localVertex) + rotatedPlacement.origin
+            if (worldVertex.z < minZ) {
+              minZ = worldVertex.z
               frameWithMinZ = frameIndex
             }
-            if (worldCorner.z > maxZ) {
-              maxZ = worldCorner.z
+            if (worldVertex.z > maxZ) {
+              maxZ = worldVertex.z
               frameWithMaxZ = frameIndex
             }
           }
