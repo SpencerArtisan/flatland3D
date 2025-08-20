@@ -32,11 +32,11 @@ class ShadingSpec extends AnyFlatSpec with should.Matchers {
 
     val faces = Seq(
       // +X face
-      ("+X", faceSamples(Coord(box.width - 0.001, box.height / 2, box.depth / 2))),
+      ("+X", faceSamples(Coord(box.width / 2 - 0.001, 0, 0))),
       // +Y face
-      ("+Y", faceSamples(Coord(box.width / 2, box.height - 0.001, box.depth / 2))),
+      ("+Y", faceSamples(Coord(0, box.height / 2 - 0.001, 0))),
       // +Z face
-      ("+Z", faceSamples(Coord(box.width / 2, box.height / 2, box.depth - 0.001)))
+      ("+Z", faceSamples(Coord(0, 0, box.depth / 2 - 0.001)))
     )
 
     // Keep only faces that appear on screen (non-blank)

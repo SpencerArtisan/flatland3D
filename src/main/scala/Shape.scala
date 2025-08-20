@@ -18,7 +18,7 @@ trait Shape {
 }
 
 case class Box(id: Int, width: Double, height: Double, depth: Double) extends Shape {
-  val center: Coord = Coord(width / 2, height / 2, depth / 2)
+  val center: Coord = Coord(0, 0, 0)
 
   def occupiesSpaceAt(coord: Coord): Boolean = {
     val halfWidth = width / 2
