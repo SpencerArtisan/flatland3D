@@ -12,7 +12,7 @@ object Main {
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map(rotateShapes(world, _)).collect {
-      case Right(w) => Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
+      case Right(w) => Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
     }
 
   private def animate(frames: Seq[String]): Unit = {
@@ -31,7 +31,7 @@ object Main {
     val rotatedWorld = rotateShapes(world, frameIndex)
     rotatedWorld match {
       case Right(w) =>
-        val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2, cullBackfaces = true)
+        val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
         val lines = rendered.split("\n")
         
         // Find bounding box of rendered content

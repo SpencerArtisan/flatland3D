@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude code whoami)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(sbt test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

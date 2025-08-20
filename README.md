@@ -4,7 +4,7 @@ A 3D graphics rendering engine written in Scala that creates ASCII-based 3D visu
 
 ## Overview
 
-Flatland3D demonstrates core computer graphics concepts by rendering 3D shapes as animated ASCII art. The engine implements fundamental 3D graphics features including transformations, lighting, shading, and backface culling - all rendered using Unicode block characters in your terminal.
+Flatland3D demonstrates core computer graphics concepts by rendering 3D shapes as animated ASCII art. The engine implements fundamental 3D graphics features including transformations, lighting, and shading - all rendered using Unicode block characters in your terminal.
 
 ## Features
 
@@ -12,7 +12,6 @@ Flatland3D demonstrates core computer graphics concepts by rendering 3D shapes a
 - **Real-time Animation**: Smooth rotation animations with configurable frame rates
 - **Lighting System**: Directional lighting with ambient light support
 - **Shading**: Surface normal calculations for realistic lighting effects  
-- **Backface Culling**: Performance optimization by hiding non-visible faces
 - **Boundary Checking**: Prevents shapes from extending beyond world boundaries
 - **Frame Diagnostics**: Real-time display of rendering bounds and aspect ratios
 
@@ -70,7 +69,7 @@ The main demo can be customized by modifying `Main.scala`:
 - **Shape dimensions**: `Box(id, width, height, depth)`
 - **Animation speed**: `Thread.sleep(milliseconds)`
 - **Lighting**: `lightDirection` and `ambient` parameters
-- **Rendering**: `xScale` and `cullBackfaces` options
+- **Rendering**: `xScale` scaling option
 
 ## Technical Details
 
