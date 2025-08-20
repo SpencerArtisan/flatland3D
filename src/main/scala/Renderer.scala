@@ -97,4 +97,94 @@ object Renderer {
     val characterIndex = Math.min(characterGradient.length - 1, Math.max(0, (quantizedBrightness * (characterGradient.length - 1)).toInt))
     characterGradient.charAt(characterIndex)
   }
+
+  def renderShadedForward(world: World,
+                         lightDirection: Coord = Coord(0, 0, -1),
+                         chars: String = ".,:-=+*#%@",
+                         ambient: Double = 0.2,
+                         xScale: Int = 1): String = {
+    val light = lightDirection.normalize
+    val frameBuffer = createFrameBuffer(world.width, world.height)
+    val depthBuffer = createDepthBuffer(world.width, world.height)
+
+    world.placements.foreach { placement =>
+      renderPlacementForward(placement, light, chars, ambient, frameBuffer, depthBuffer)
+    }
+
+    frameBufferToString(frameBuffer, xScale)
+  }
+
+  private def createFrameBuffer(width: Int, height: Int): Array[Array[Char]] =
+    Array.fill(height, width)(' ')
+
+  private def createDepthBuffer(width: Int, height: Int): Array[Array[Double]] =
+    Array.fill(height, width)(Double.MaxValue)
+
+  private def renderPlacementForward(placement: Placement, 
+                                   light: Coord, 
+                                   chars: String, 
+                                   ambient: Double,
+                                   frameBuffer: Array[Array[Char]], 
+                                   depthBuffer: Array[Array[Double]]): Unit = {
+    val box = placement.shape.asInstanceOf[Box]
+    enumerateCanonicalVoxels(box).foreach { canonicalVoxel =>
+      val worldPoint = transformVoxelToWorld(canonicalVoxel, placement)
+      val screenPixel = projectToScreen(worldPoint)
+      
+      if (isWithinScreenBounds(screenPixel, frameBuffer) && shouldRenderAtDepth(worldPoint.z, screenPixel, depthBuffer)) {
+        val shadingChar = calculateVoxelShading(canonicalVoxel, box, light, placement, ambient, chars)
+        renderPixelToBuffer(screenPixel, shadingChar, worldPoint.z, frameBuffer, depthBuffer)
+      }
+    }
+  }
+
+  private def enumerateCanonicalVoxels(box: Box): Seq[Coord] = {
+    val halfWidth = (box.width / 2).toInt
+    val halfHeight = (box.height / 2).toInt  
+    val halfDepth = (box.depth / 2).toInt
+    
+    for {
+      x <- -halfWidth to halfWidth
+      y <- -halfHeight to halfHeight
+      z <- -halfDepth to halfDepth
+      voxel = Coord(x, y, z)
+      if box.occupiesSpaceAt(voxel)
+    } yield voxel
+  }
+
+  private def transformVoxelToWorld(canonicalVoxel: Coord, placement: Placement): Coord =
+    placement.rotation.applyTo(canonicalVoxel) + placement.origin
+
+  private def projectToScreen(worldPoint: Coord): (Int, Int) =
+    (Math.round(worldPoint.x).toInt, Math.round(worldPoint.y).toInt)
+
+  private def isWithinScreenBounds(screenPixel: (Int, Int), frameBuffer: Array[Array[Char]]): Boolean = {
+    val (x, y) = screenPixel
+    y >= 0 && y < frameBuffer.length && x >= 0 && x < frameBuffer(0).length
+  }
+
+  private def shouldRenderAtDepth(depth: Double, screenPixel: (Int, Int), depthBuffer: Array[Array[Double]]): Boolean = {
+    val (x, y) = screenPixel
+    depth < depthBuffer(y)(x)
+  }
+
+  private def calculateVoxelShading(canonicalVoxel: Coord, box: Box, worldLight: Coord, placement: Placement, ambient: Double, chars: String): Char = {
+    val localNormal = box.surfaceNormalAt(canonicalVoxel)
+    val localLight = transformLightToShapeSpace(worldLight, placement.rotation)
+    val brightness = calculateLambertianBrightness(localNormal, localLight, ambient)
+    brightnessToCharacter(brightness, chars)
+  }
+
+  private def renderPixelToBuffer(screenPixel: (Int, Int), 
+                                char: Char, 
+                                depth: Double,
+                                frameBuffer: Array[Array[Char]], 
+                                depthBuffer: Array[Array[Double]]): Unit = {
+    val (x, y) = screenPixel
+    frameBuffer(y)(x) = char
+    depthBuffer(y)(x) = depth
+  }
+
+  private def frameBufferToString(frameBuffer: Array[Array[Char]], xScale: Int): String =
+    frameBuffer.map(_.map(_.toString * xScale).mkString).mkString("\n")
 }

@@ -7,7 +7,7 @@ class ShadingSpec extends AnyFlatSpec with should.Matchers {
       val world = World(160, 120, 120)
     .add(Box(1, 40, 40, 40), Coord(60, 50, 60), Rotation(Math.PI / 6, Math.PI / 6, Math.PI / 12))
 
-  val rendered = Renderer.renderShaded(world, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 1)
+  val rendered = Renderer.renderShadedForward(world, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 1)
     val lines = rendered.split("\n")
 
     def charAt(x: Int, y: Int): Char =

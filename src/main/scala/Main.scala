@@ -12,7 +12,7 @@ object Main {
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map(rotateShapes(world, _)).collect {
-      case Right(w) => Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
+      case Right(w) => Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
     }
 
   private def animate(frames: Seq[String]): Unit = {

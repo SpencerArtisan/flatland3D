@@ -72,7 +72,7 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           }
         }
         
-        val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
+        val rendered = Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
         val lines = rendered.split("\n")
 
 
@@ -172,7 +172,7 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           val isOccupied = placement.occupiesSpaceAt(coord)
         }
         
-        val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
+        val rendered = Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
         val lines = rendered.split("\n")
 
         // Print the actual rendered output
@@ -256,7 +256,7 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
         }
         
         
-        val rendered = Renderer.renderShaded(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
+        val rendered = Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
         val lines = rendered.split("\n")
 
         // Print the actual rendered output
