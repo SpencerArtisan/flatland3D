@@ -47,25 +47,31 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
   }
   
   private def findClosestFaceNormal(point: Coord, halfWidth: Double, halfHeight: Double, halfDepth: Double): Coord = {
-    val tolerance = 1.0
+    val xTolerance = halfWidth * 0.3
+    val yTolerance = halfHeight * 0.3  
+    val zTolerance = halfDepth * 0.3
     
-    if (Math.abs(point.x - halfWidth) < tolerance) Coord(1, 0, 0)
-    else if (Math.abs(point.x + halfWidth) < tolerance) Coord(-1, 0, 0)
-    else if (Math.abs(point.y - halfHeight) < tolerance) Coord(0, 1, 0) 
-    else if (Math.abs(point.y + halfHeight) < tolerance) Coord(0, -1, 0)
-    else if (Math.abs(point.z - halfDepth) < tolerance) Coord(0, 0, 1)
-    else if (Math.abs(point.z + halfDepth) < tolerance) Coord(0, 0, -1)
-    else {
-      val distancesToFaces = Seq(
-        (Math.abs(point.x - halfWidth), Coord(1, 0, 0)),
-        (Math.abs(point.x + halfWidth), Coord(-1, 0, 0)),
-        (Math.abs(point.y - halfHeight), Coord(0, 1, 0)),
-        (Math.abs(point.y + halfHeight), Coord(0, -1, 0)),
-        (Math.abs(point.z - halfDepth), Coord(0, 0, 1)),
-        (Math.abs(point.z + halfDepth), Coord(0, 0, -1))
-      )
-      distancesToFaces.minBy(_._1)._2
+    if (isNearFace(point.x, halfWidth, xTolerance)) {
+      if (point.x > 0) Coord(1, 0, 0) else Coord(-1, 0, 0)
+    } else if (isNearFace(point.y, halfHeight, yTolerance)) {
+      if (point.y > 0) Coord(0, 1, 0) else Coord(0, -1, 0)  
+    } else if (isNearFace(point.z, halfDepth, zTolerance)) {
+      if (point.z > 0) Coord(0, 0, 1) else Coord(0, 0, -1)
+    } else {
+      fallbackToClosestFace(point, halfWidth, halfHeight, halfDepth)
     }
+  }
+  
+  private def isNearFace(coordinate: Double, halfSize: Double, tolerance: Double): Boolean =
+    Math.abs(Math.abs(coordinate) - halfSize) <= tolerance
+    
+  private def fallbackToClosestFace(point: Coord, halfWidth: Double, halfHeight: Double, halfDepth: Double): Coord = {
+    val distancesToFaces = Seq(
+      (Math.abs(Math.abs(point.x) - halfWidth), if (point.x > 0) Coord(1, 0, 0) else Coord(-1, 0, 0)),
+      (Math.abs(Math.abs(point.y) - halfHeight), if (point.y > 0) Coord(0, 1, 0) else Coord(0, -1, 0)),
+      (Math.abs(Math.abs(point.z) - halfDepth), if (point.z > 0) Coord(0, 0, 1) else Coord(0, 0, -1))
+    )
+    distancesToFaces.minBy(_._1)._2
   }
 
 }
