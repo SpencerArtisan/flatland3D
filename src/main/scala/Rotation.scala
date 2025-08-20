@@ -23,6 +23,8 @@ case class Rotation(yaw: Double, pitch: Double, roll: Double) {
     val rzY = ry.x * sinYaw + ry.y * cosYaw
     Coord(rzX, rzY, ry.z)
   }
+
+  def inverse: Rotation = Rotation(-yaw, -pitch, -roll)
 }
 
 object Rotation {

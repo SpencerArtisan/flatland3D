@@ -21,13 +21,10 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
   val center: Coord = Coord(width / 2, height / 2, depth / 2)
 
   def occupiesSpaceAt(coord: Coord): Boolean = {
-    // Local coordinates are centered around the box center
     val halfWidth = width / 2
     val halfHeight = height / 2
     val halfDepth = depth / 2
     
-    // Ensure the box only occupies space at integer coordinates to prevent multiple Z-level rendering
-    // Round coordinates to nearest integer to avoid floating-point precision issues
     val roundedCoord = Coord(
       Math.round(coord.x).toDouble,
       Math.round(coord.y).toDouble,
@@ -42,23 +39,33 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
   }
 
   override def surfaceNormalAt(local: Coord): Coord = {
-    val dominantAxis = findDominantAxis(local)
-    outwardNormalForAxis(dominantAxis, local)
-  }
-  
-  private def findDominantAxis(local: Coord): String = {
-    val absX = Math.abs(local.x)
-    val absY = Math.abs(local.y)
-    val absZ = Math.abs(local.z)
+    val halfWidth = width / 2
+    val halfHeight = height / 2
+    val halfDepth = depth / 2
     
-    if (absX >= absY && absX >= absZ) "x"
-    else if (absY >= absZ) "y"
-    else "z"
+    findClosestFaceNormal(local, halfWidth, halfHeight, halfDepth)
   }
   
-  private def outwardNormalForAxis(axis: String, local: Coord): Coord = axis match {
-    case "x" => if (local.x > 0) Coord(1, 0, 0) else Coord(-1, 0, 0)
-    case "y" => if (local.y > 0) Coord(0, 1, 0) else Coord(0, -1, 0)
-    case "z" => if (local.z > 0) Coord(0, 0, 1) else Coord(0, 0, -1)
+  private def findClosestFaceNormal(point: Coord, halfWidth: Double, halfHeight: Double, halfDepth: Double): Coord = {
+    val tolerance = 1.0
+    
+    if (Math.abs(point.x - halfWidth) < tolerance) Coord(1, 0, 0)
+    else if (Math.abs(point.x + halfWidth) < tolerance) Coord(-1, 0, 0)
+    else if (Math.abs(point.y - halfHeight) < tolerance) Coord(0, 1, 0) 
+    else if (Math.abs(point.y + halfHeight) < tolerance) Coord(0, -1, 0)
+    else if (Math.abs(point.z - halfDepth) < tolerance) Coord(0, 0, 1)
+    else if (Math.abs(point.z + halfDepth) < tolerance) Coord(0, 0, -1)
+    else {
+      val distancesToFaces = Seq(
+        (Math.abs(point.x - halfWidth), Coord(1, 0, 0)),
+        (Math.abs(point.x + halfWidth), Coord(-1, 0, 0)),
+        (Math.abs(point.y - halfHeight), Coord(0, 1, 0)),
+        (Math.abs(point.y + halfHeight), Coord(0, -1, 0)),
+        (Math.abs(point.z - halfDepth), Coord(0, 0, 1)),
+        (Math.abs(point.z + halfDepth), Coord(0, 0, -1))
+      )
+      distancesToFaces.minBy(_._1)._2
+    }
   }
+
 }

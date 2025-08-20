@@ -64,20 +64,14 @@ object Renderer {
           .map { column =>
             // Enhanced Z-scan: check multiple Z values per pixel for better accuracy at extreme rotations
             val hitChar: Option[Char] = zScan.flatMap { z =>
-              // Check only the integer Z coordinate for simplicity and correctness
               val worldPoint = Coord(column, row, z)
               world.placements.find(_.occupiesSpaceAt(worldPoint)).map { placement =>
-                // Calculate surface normal for shading
                 val localPoint = placement.worldToLocal(worldPoint)
                 val localNormal = placement.shape.surfaceNormalAt(localPoint)
-                val worldNormal = placement.rotation.applyTo(localNormal).normalize
-                
-                val ndotl = Math.max(0.0, worldNormal.dot(light))
-                val brightnessLinear = Math.min(1.0, Math.max(0.0, ambient + (1.0 - ambient) * ndotl))
-                val levels = 4
-                val brightness = Math.round(brightnessLinear * (levels - 1)).toDouble / (levels - 1)
-                val idx = Math.min(chars.length - 1, Math.max(0, (brightness * (chars.length - 1)).toInt))
-                chars.charAt(idx)
+                val localLight = transformLightToShapeSpace(light, placement.rotation)
+                val brightness = calculateLambertianBrightness(localNormal, localLight, ambient)
+                val shadingChar = brightnessToCharacter(brightness, chars)
+                shadingChar
               }
             }.headOption
 
@@ -87,5 +81,20 @@ object Renderer {
           .mkString
       }
       .mkString("\n")
+  }
+
+  private def transformLightToShapeSpace(worldLight: Coord, shapeRotation: Rotation): Coord =
+    shapeRotation.inverse.applyTo(worldLight)
+
+  private def calculateLambertianBrightness(surfaceNormal: Coord, lightDirection: Coord, ambientLevel: Double): Double = {
+    val lightDotNormal = Math.max(0.0, surfaceNormal.dot(lightDirection))
+    Math.min(1.0, Math.max(0.0, ambientLevel + (1.0 - ambientLevel) * lightDotNormal))
+  }
+
+  private def brightnessToCharacter(brightness: Double, characterGradient: String): Char = {
+    val quantizationLevels = 4
+    val quantizedBrightness = Math.round(brightness * (quantizationLevels - 1)).toDouble / (quantizationLevels - 1)
+    val characterIndex = Math.min(characterGradient.length - 1, Math.max(0, (quantizedBrightness * (characterGradient.length - 1)).toInt))
+    characterGradient.charAt(characterIndex)
   }
 }

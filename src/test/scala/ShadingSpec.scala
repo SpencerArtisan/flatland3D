@@ -48,10 +48,10 @@ class ShadingSpec extends AnyFlatSpec with should.Matchers {
     // Expect at least 2 faces, ideally 3
     visibleFaces.size should be >= 2
 
-    // Each visible face should have mostly consistent shading (allow some variation due to improved normals)
+    // Each visible face should have consistent character across its samples
     visibleFaces.foreach { case (name, chars) =>
-      withClue(s"Face $name has too much shade variation: ") {
-        chars.distinct.size should be <= 3  // Allow up to 3 different shades per face
+      withClue(s"Face $name inconsistent shades: ") {
+        chars.distinct.size should be <= 1
       }
     }
   }
