@@ -4,7 +4,10 @@
       "Bash(claude code whoami)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(sbt test:*)"
+      "Bash(sbt test:*)",
+      "Bash(scala -cp target/scala-2.13/classes test_normals.scala)",
+      "Bash(rm:*)",
+      "Bash(sbt:*)"
     ],
     "deny": [],
     "ask": []

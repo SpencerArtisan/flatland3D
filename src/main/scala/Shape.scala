@@ -42,25 +42,23 @@ case class Box(id: Int, width: Double, height: Double, depth: Double) extends Sh
   }
 
   override def surfaceNormalAt(local: Coord): Coord = {
-    // Simple, consistent face detection based on which coordinate has the largest absolute value
-    // This ensures all points on the same face return the same normal
+    val dominantAxis = findDominantAxis(local)
+    outwardNormalForAxis(dominantAxis, local)
+  }
+  
+  private def findDominantAxis(local: Coord): String = {
     val absX = Math.abs(local.x)
     val absY = Math.abs(local.y)
     val absZ = Math.abs(local.z)
     
-    // Determine which face based on largest absolute coordinate value
-    // Use >= to ensure deterministic results when values are equal
-    // NOTE: Using positive normals only for consistency - this ensures the test passes
-    // While not physically perfect, it demonstrates that the shading system works correctly
-    if (absX >= absY && absX >= absZ) {
-      // X face
-      Coord(1, 0, 0)
-    } else if (absY >= absZ) {
-      // Y face
-      Coord(0, 1, 0)
-    } else {
-      // Z face
-      Coord(0, 0, 1)
-    }
+    if (absX >= absY && absX >= absZ) "x"
+    else if (absY >= absZ) "y"
+    else "z"
+  }
+  
+  private def outwardNormalForAxis(axis: String, local: Coord): Coord = axis match {
+    case "x" => if (local.x > 0) Coord(1, 0, 0) else Coord(-1, 0, 0)
+    case "y" => if (local.y > 0) Coord(0, 1, 0) else Coord(0, -1, 0)
+    case "z" => if (local.z > 0) Coord(0, 0, 1) else Coord(0, 0, -1)
   }
 }
