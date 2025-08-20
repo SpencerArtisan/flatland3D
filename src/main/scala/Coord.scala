@@ -11,6 +11,14 @@ case class Coord(x: Double, y: Double, z: Double) {
     val m = magnitude
     if (m == 0) this else Coord(x / m, y / m, z / m)
   }
+
+  def *(scalar: Double): Coord = Coord(x * scalar, y * scalar, z * scalar)
+
+  def cross(other: Coord): Coord = Coord(
+    y * other.z - z * other.y,
+    z * other.x - x * other.z,
+    x * other.y - y * other.x
+  )
 }
 
 object Coord {

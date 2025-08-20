@@ -8,7 +8,10 @@
       "Bash(scala -cp target/scala-2.13/classes test_normals.scala)",
       "Bash(rm:*)",
       "Bash(sbt:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(scala -cp target/scala-2.13/classes debug_unified_coords.scala)",
+      "Bash(git checkout:*)",
+      "Bash(scala -cp target/scala-2.13/classes debug_triangle_cube.scala)"
     ],
     "deny": [],
     "ask": []
