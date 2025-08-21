@@ -106,6 +106,7 @@ object TriangleShapes {
 
   // Available models for Easter egg mode (all CC0 licensed)
   private val EasterEggModels = Seq(
+    "car.obj" -> "Car",
     "dragon.obj" -> "Dragon",
     "crystal.obj" -> "Crystal Cluster",
     "starship.obj" -> "Retro Starship",
@@ -134,7 +135,10 @@ object TriangleShapes {
     result match {
       case Right(mesh) =>
         // Scale the mesh to the requested size
-        ObjParser.scaleMesh(mesh.copy(id = id), size)
+        val scaledMesh = ObjParser.scaleMesh(mesh.copy(id = id), size)
+        // Output performance metrics
+        ObjParser.getLastMetrics.foreach(metrics => println(metrics.toString))
+        scaledMesh
         
       case Left(error) =>
         // Fallback to a simple cube if model loading fails

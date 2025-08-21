@@ -6,9 +6,24 @@ class AnimationEngine(
   worldSize: Int,
   cubeSize: Int,
   cubeCenter: Coord,
-  shapeId: Int,
-  frameDelayMs: Int
+  shapeId: Int
 ) {
+  // Performance metrics
+  case class RenderMetrics(
+    transformTimeMs: Long,
+    renderTimeMs: Long,
+    frameIndex: Int
+  ) {
+    override def toString: String =
+      s"""Frame $frameIndex Render Metrics:
+         |  Transform Time: ${transformTimeMs}ms
+         |  Render Time: ${renderTimeMs}ms
+         |  Total Time: ${transformTimeMs + renderTimeMs}ms
+         |""".stripMargin
+  }
+  
+  private var lastMetrics: Option[RenderMetrics] = None
+  def getLastMetrics: Option[RenderMetrics] = lastMetrics
   @volatile private var running = true
   
   // State management - AnimationEngine now owns the state
@@ -34,8 +49,12 @@ class AnimationEngine(
   
   def buildAnimationFrames(): LazyList[String] = {
     LazyList.from(0).map { frameIndex =>
+      val transformStart = System.nanoTime()
       rotateShapes(frameIndex) match {
         case Right(w) =>
+          val transformTime = (System.nanoTime() - transformStart) / 1000000
+          
+          val renderStart = System.nanoTime()
           val rendered = Renderer.renderShadedForward(
             w, 
             lightDirection = Coord(-1, -1, -1), 
@@ -43,6 +62,20 @@ class AnimationEngine(
             xScale = 2,
             viewport = Some(currentViewport)
           )
+          val renderTime = (System.nanoTime() - renderStart) / 1000000
+          
+          // Update metrics
+          lastMetrics = Some(RenderMetrics(
+            transformTimeMs = transformTime,
+            renderTimeMs = renderTime,
+            frameIndex = frameIndex
+          ))
+          
+          // Print metrics every 10 frames
+          if (frameIndex % 10 == 0) {
+            println(lastMetrics.get.toString)
+          }
+          
           addRotationDetails(rendered, frameIndex, currentRotation)
         case Left(_) => "" // Skip errors
       }
@@ -76,7 +109,6 @@ class AnimationEngine(
       print("\u001b[2J\u001b[H")
       print(frameWithControls)
       System.out.flush() // Ensure output is flushed
-      Thread.sleep(frameDelayMs)
       
       frameIndex += 1
     }

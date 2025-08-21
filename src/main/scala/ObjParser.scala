@@ -1,8 +1,29 @@
 // Parser for Wavefront OBJ files
 // Supports basic geometry (vertices and faces) for loading 3D models
 object ObjParser {
+  // Performance metrics
+  case class LoadMetrics(
+    parseTimeMs: Long,
+    vertexCount: Int,
+    triangleCount: Int,
+    scaleTimeMs: Long = 0
+  ) {
+    override def toString: String = 
+      s"""Model Loading Metrics:
+         |  Parse Time: ${parseTimeMs}ms
+         |  Scale Time: ${scaleTimeMs}ms
+         |  Total Time: ${parseTimeMs + scaleTimeMs}ms
+         |  Vertices: $vertexCount
+         |  Triangles: $triangleCount
+         |""".stripMargin
+  }
+  
+  private var lastMetrics: Option[LoadMetrics] = None
+  
+  def getLastMetrics: Option[LoadMetrics] = lastMetrics
   // Parse OBJ file content into vertices and triangles
   def parse(content: String): Either[String, TriangleMesh] = {
+    val startTime = System.nanoTime()
     try {
       val vertices = scala.collection.mutable.ArrayBuffer[Coord]()
       val faces = scala.collection.mutable.ArrayBuffer[Triangle]()
@@ -83,6 +104,12 @@ object ObjParser {
       } else if (faces.isEmpty) {
         Left("No faces found in OBJ file")
       } else {
+        val parseTime = (System.nanoTime() - startTime) / 1000000 // Convert to milliseconds
+        lastMetrics = Some(LoadMetrics(
+          parseTimeMs = parseTime,
+          vertexCount = vertices.size,
+          triangleCount = faces.size
+        ))
         Right(TriangleMesh(1, faces.toSeq)) // TODO: Allow ID to be specified
       }
       
@@ -94,6 +121,7 @@ object ObjParser {
   
   // Helper method to scale a mesh to fit within a given size
   def scaleMesh(mesh: TriangleMesh, targetSize: Double): TriangleMesh = {
+    val startTime = System.nanoTime()
     // Find current bounds
     val vertices = mesh.triangles.flatMap(t => Seq(t.v0, t.v1, t.v2))
     val minX = vertices.map(_.x).min
@@ -124,6 +152,13 @@ object ObjParser {
       )
     }
     
-    TriangleMesh(mesh.id, scaledTriangles)
+    val result = TriangleMesh(mesh.id, scaledTriangles)
+    
+    // Update metrics with scaling time
+    lastMetrics = lastMetrics.map(m => m.copy(
+      scaleTimeMs = (System.nanoTime() - startTime) / 1000000 // Convert to milliseconds
+    ))
+    
+    result
   }
 }

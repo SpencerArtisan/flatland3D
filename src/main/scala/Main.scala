@@ -5,8 +5,6 @@ object Main {
   val PYRAMID_ID = 103
   val WORLD_SIZE = 60  // Increased to accommodate multiple shapes
   val SHAPE_SIZE = 8   // Slightly smaller shapes to fit better
-  val FRAME_DELAY_MS = 66
-  
   // Shape positions - arranged in a triangle formation for better viewing
   val CUBE_CENTER = Coord(20, 30, 30)
   val TETRAHEDRON_CENTER = Coord(40, 30, 30)
@@ -23,8 +21,7 @@ object Main {
       worldSize = WORLD_SIZE,
       cubeSize = SHAPE_SIZE,
       cubeCenter = SHAPES_CENTROID,
-      shapeId = CUBE_ID,
-      frameDelayMs = FRAME_DELAY_MS
+      shapeId = CUBE_ID
     )
     
     println("Flatland3D Interactive Mode - Multi-Shape Demo")

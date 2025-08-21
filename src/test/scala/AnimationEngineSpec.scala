@@ -16,8 +16,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
     worldSize = 22,
     cubeSize = 5,
     cubeCenter = Coord(10, 10, 10),
-    shapeId = 101,
-    frameDelayMs = 66
+    shapeId = 101
   )
 
   override def afterEach(): Unit = {
@@ -111,8 +110,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Should not throw any exceptions
@@ -127,8 +125,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Test zoom in
@@ -147,8 +144,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     val panned = viewportEngine.panViewport(Coord(5, 3, 2))
@@ -162,8 +158,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     val reset = viewportEngine.resetViewport()
@@ -177,8 +172,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Set a custom viewport
@@ -201,8 +195,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     val initialViewport = viewportEngine.getCurrentViewport.get
@@ -227,8 +220,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Set zoom delta
@@ -250,8 +242,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Set pan delta
@@ -273,8 +264,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Request viewport reset
@@ -295,8 +285,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Set rotation delta
@@ -321,8 +310,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Initial positions and sizes
@@ -369,8 +357,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Initially not in Easter egg mode
@@ -392,8 +379,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Enter Easter egg mode
@@ -416,8 +402,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       worldSize = 22,
       cubeSize = 5,
       cubeCenter = Coord(10, 10, 10),
-      shapeId = 101,
-      frameDelayMs = 66
+      shapeId = 101
     )
     
     // Activate Easter egg mode
@@ -445,7 +430,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
         vertices.map(_.z).max - vertices.map(_.z).min
       )
     )
-    maxDimension should be > 35.0 // Should be massive (9x scale)
+    maxDimension.toDouble should be > 35.0 // Should be massive (9x scale)
   }
 }
 
