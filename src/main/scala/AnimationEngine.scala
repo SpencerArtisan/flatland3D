@@ -153,26 +153,14 @@ class AnimationEngine(
   
 
   
-  // Add key display to the rendered frame
+  // Add control instructions to the rendered frame
   private def addKeyDisplay(frame: String): String = {
     val lines = frame.split("\n")
     if (lines.nonEmpty) {
-      val keyDisplay = lastKeyPressed match {
-        case Some(113) => " Key: q (quit) "
-        case Some(81) => " Key: Q (quit) "
-        case Some(27) => " Key: ESC (exit) "
-        case Some(keyCode) => s" Key: $keyCode "
-        case None => " Key: - "
-      }
-      
-      // Add key display to the end of the first line
-      val firstLine = lines(0)
-      val modifiedFirstLine = firstLine + keyDisplay
-      
       // Add control instructions at the bottom
       val controlsLine = "\nControls: Q/ESC = Quit"
       
-      (modifiedFirstLine +: lines.tail).mkString("\n") + controlsLine
+      frame + controlsLine
     } else {
       frame
     }
