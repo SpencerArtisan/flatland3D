@@ -311,4 +311,188 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
     testInteraction.getRotationDelta should be(rotationDelta)
     testInteraction.getViewportDelta should be(viewportDelta)
   }
+
+  // Scale factor tests
+  "AnimationEngine scale factor" should "scale both size and positions" in {
+    val testUserInteraction = new TestEasterEggUserInteraction()
+    val engine = new AnimationEngine(
+      world = testWorld,
+      userInteraction = testUserInteraction,
+      worldSize = 22,
+      cubeSize = 5,
+      cubeCenter = Coord(10, 10, 10),
+      shapeId = 101,
+      frameDelayMs = 66
+    )
+    
+    // Initial positions and sizes
+    val initialWorld = engine.buildCurrentWorld()
+    val initialPlacements = initialWorld.placements.toSeq
+    val initialPos = initialPlacements.head.origin
+    val initialSize = initialPlacements.head.shape match {
+      case mesh: TriangleMesh => mesh.triangles.flatMap(t => Seq(t.v0, t.v1, t.v2)).map(_.magnitude).max
+      case _ => 0.0
+    }
+    
+    // Request scale up
+    testUserInteraction.requestScaleUp()
+    engine.processDeltas()
+    
+    // Force a rebuild of the world with the new scale
+    val rotated = engine.rotateShapes(0)
+    val scaledWorld = rotated.getOrElse(testWorld)
+    val scaledPlacements = scaledWorld.placements.toSeq
+    val scaledPos = scaledPlacements.head.origin
+    val scaledSize = scaledPlacements.head.shape match {
+      case mesh: TriangleMesh => mesh.triangles.flatMap(t => Seq(t.v0, t.v1, t.v2)).map(_.magnitude).max
+      case _ => 0.0
+    }
+    
+    // Both position and size should be scaled by 1.1
+    println(s"Initial pos: $initialPos (mag: ${initialPos.magnitude})")
+    println(s"Scaled pos: $scaledPos (mag: ${scaledPos.magnitude})")
+    println(s"Initial size: $initialSize")
+    println(s"Scaled size: $scaledSize")
+    println(s"Scale factor: ${testUserInteraction.getScaleFactor}")
+    println(s"Current scale: ${engine.getCurrentScale}")
+    scaledPos.magnitude should be (initialPos.magnitude * 1.1 +- 0.001)
+    scaledSize should be (initialSize * 1.1 +- 0.001)
+  }
+
+  // Easter egg mode tests
+  "AnimationEngine Easter egg" should "detect Easter egg toggle requests from user interaction" in {
+    // Create a user interaction that can simulate Easter egg toggle
+    val easterEggUserInteraction = new TestEasterEggUserInteraction()
+    val easterEggEngine = new AnimationEngine(
+      world = testWorld,
+      userInteraction = easterEggUserInteraction,
+      worldSize = 22,
+      cubeSize = 5,
+      cubeCenter = Coord(10, 10, 10),
+      shapeId = 101,
+      frameDelayMs = 66
+    )
+    
+    // Initially not in Easter egg mode
+    easterEggEngine.isEasterEggActive should be(false)
+    
+    // Simulate Easter egg toggle request
+    easterEggUserInteraction.requestEasterEggToggle()
+    easterEggEngine.processDeltas()
+    
+    // Should now be in Easter egg mode
+    easterEggEngine.isEasterEggActive should be(true)
+  }
+
+  it should "toggle Easter egg mode on and off" in {
+    val easterEggUserInteraction = new TestEasterEggUserInteraction()
+    val easterEggEngine = new AnimationEngine(
+      world = testWorld,
+      userInteraction = easterEggUserInteraction,
+      worldSize = 22,
+      cubeSize = 5,
+      cubeCenter = Coord(10, 10, 10),
+      shapeId = 101,
+      frameDelayMs = 66
+    )
+    
+    // Toggle on
+    easterEggUserInteraction.requestEasterEggToggle()
+    easterEggEngine.processDeltas()
+    easterEggEngine.isEasterEggActive should be(true)
+    
+    // Toggle off
+    easterEggUserInteraction.clearRequests()
+    easterEggUserInteraction.requestEasterEggToggle()
+    easterEggEngine.processDeltas()
+    easterEggEngine.isEasterEggActive should be(false)
+  }
+
+  it should "build Elite world with single large Cobra spaceship when Easter egg is active" in {
+    val easterEggUserInteraction = new TestEasterEggUserInteraction()
+    val easterEggEngine = new AnimationEngine(
+      world = testWorld,
+      userInteraction = easterEggUserInteraction,
+      worldSize = 22,
+      cubeSize = 5,
+      cubeCenter = Coord(10, 10, 10),
+      shapeId = 101,
+      frameDelayMs = 66
+    )
+    
+    // Activate Easter egg mode
+    easterEggUserInteraction.requestEasterEggToggle()
+    easterEggEngine.processDeltas()
+    
+    // Build current world
+    val eliteWorld = easterEggEngine.buildCurrentWorld()
+    
+    // Should contain exactly one Cobra spaceship
+    val placements = eliteWorld.placements.toSeq
+    placements should have length 1
+    
+    // The single shape should be a triangle mesh (Cobra spaceship)
+    val cobraPlacement = placements.head
+    cobraPlacement.shape shouldBe a[TriangleMesh]
+    
+    // Should be larger than original cubeSize (5) - expecting 9x scale = 45
+    val cobra = cobraPlacement.shape.asInstanceOf[TriangleMesh]
+    val vertices = cobra.triangles.flatMap(t => Seq(t.v0, t.v1, t.v2)).distinct
+    val maxDimension = math.max(
+      vertices.map(_.x).max - vertices.map(_.x).min,
+      math.max(
+        vertices.map(_.y).max - vertices.map(_.y).min,
+        vertices.map(_.z).max - vertices.map(_.z).min
+      )
+    )
+    maxDimension should be > 35.0 // Should be massive (9x scale)
+  }
+}
+
+// Test user interaction class that supports Easter egg functionality
+class TestEasterEggUserInteraction extends UserInteraction {
+  // Delta accumulation for testing
+  private var rotationDelta: Rotation = Rotation.ZERO
+  private var viewportDelta: ViewportDelta = ViewportDelta.IDENTITY
+  private var quitRequested: Boolean = false
+  private var resetRequested: Boolean = false
+  private var viewportResetRequested: Boolean = false
+  private var easterEggToggleRequested: Boolean = false
+  private var scaleFactor: Double = 1.0
+  
+  // UserInteraction interface implementation
+  override def getRotationDelta: Rotation = rotationDelta
+  override def getViewportDelta: ViewportDelta = viewportDelta
+  override def getScaleFactor: Double = scaleFactor
+  override def isQuitRequested: Boolean = quitRequested
+  override def isResetRequested: Boolean = resetRequested
+  override def isViewportResetRequested: Boolean = viewportResetRequested
+  override def isEasterEggToggleRequested: Boolean = easterEggToggleRequested
+  override def update(): Unit = {}
+  override def cleanup(): Unit = {}
+  override def clearDeltas(): Unit = {
+    rotationDelta = Rotation.ZERO
+    viewportDelta = ViewportDelta.IDENTITY
+    // Don't reset scaleFactor - it should persist until explicitly changed
+    resetRequested = false
+    viewportResetRequested = false
+    easterEggToggleRequested = false
+  }
+  
+  // Test helper methods
+  def setRotationDelta(delta: Rotation): Unit = rotationDelta = delta
+  def setViewportDelta(delta: ViewportDelta): Unit = viewportDelta = delta
+  def requestScaleUp(): Unit = scaleFactor = 1.1
+  def requestScaleDown(): Unit = scaleFactor = 0.9
+  def requestQuit(): Unit = quitRequested = true
+  def requestReset(): Unit = resetRequested = true
+  def requestViewportReset(): Unit = viewportResetRequested = true
+  def requestEasterEggToggle(): Unit = easterEggToggleRequested = true
+  def clearRequests(): Unit = { 
+    quitRequested = false
+    resetRequested = false
+    viewportResetRequested = false
+    easterEggToggleRequested = false
+    scaleFactor = 1.0
+  }
 }

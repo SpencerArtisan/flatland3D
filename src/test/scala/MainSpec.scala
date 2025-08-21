@@ -89,18 +89,22 @@ class TestUserInteraction extends UserInteraction {
   private var quitRequested: Boolean = false
   private var resetRequested: Boolean = false
   private var viewportResetRequested: Boolean = false
+  private var scaleFactor: Double = 1.0
   
   // UserInteraction interface implementation
   override def getRotationDelta: Rotation = rotationDelta
   override def getViewportDelta: ViewportDelta = viewportDelta
+  override def getScaleFactor: Double = scaleFactor
   override def isQuitRequested: Boolean = quitRequested
   override def isResetRequested: Boolean = resetRequested
   override def isViewportResetRequested: Boolean = viewportResetRequested
+  override def isEasterEggToggleRequested: Boolean = false  // No-op for tests
   override def update(): Unit = {}
   override def cleanup(): Unit = {}
   override def clearDeltas(): Unit = {
     rotationDelta = Rotation.ZERO
     viewportDelta = ViewportDelta.IDENTITY
+    scaleFactor = 1.0
     resetRequested = false
     viewportResetRequested = false
   }
@@ -111,6 +115,7 @@ class TestUserInteraction extends UserInteraction {
   def requestQuit(): Unit = quitRequested = true
   def requestReset(): Unit = resetRequested = true
   def requestViewportReset(): Unit = viewportResetRequested = true
+  def requestEasterEggToggle(): Unit = {} // No-op for MainSpec tests
   def clearRequests(): Unit = { 
     quitRequested = false
     resetRequested = false

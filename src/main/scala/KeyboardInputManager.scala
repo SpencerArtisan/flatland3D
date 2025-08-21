@@ -4,11 +4,13 @@ class KeyboardInputManager extends UserInteraction {
   @volatile private var quitRequested = false
   @volatile private var resetRequested = false
   @volatile private var viewportResetRequested = false
+  @volatile private var easterEggToggleRequested = false
   @volatile private var running = true
   
   // Delta accumulation - changes since last clearDeltas()
   @volatile private var accumulatedRotationDelta = Rotation.ZERO
   @volatile private var accumulatedViewportDelta = ViewportDelta.IDENTITY
+  @volatile private var accumulatedScaleFactor = 1.0
   
   private val rotationStep = Math.PI / 18  // 10 degrees per key press
   
@@ -22,9 +24,11 @@ class KeyboardInputManager extends UserInteraction {
   // UserInteraction interface implementation
   def getRotationDelta: Rotation = accumulatedRotationDelta
   def getViewportDelta: ViewportDelta = accumulatedViewportDelta
+  def getScaleFactor: Double = accumulatedScaleFactor
   def isQuitRequested: Boolean = quitRequested
   def isResetRequested: Boolean = resetRequested
   def isViewportResetRequested: Boolean = viewportResetRequested
+  def isEasterEggToggleRequested: Boolean = easterEggToggleRequested
   
   def start(): Unit = {
     enableRawMode()
@@ -38,8 +42,10 @@ class KeyboardInputManager extends UserInteraction {
   def clearDeltas(): Unit = {
     accumulatedRotationDelta = Rotation.ZERO
     accumulatedViewportDelta = ViewportDelta.IDENTITY
+    accumulatedScaleFactor = 1.0
     resetRequested = false
     viewportResetRequested = false
+    easterEggToggleRequested = false
   }
   
   def cleanup(): Unit = {
@@ -166,6 +172,9 @@ class KeyboardInputManager extends UserInteraction {
       case 113 | 81 => // 'q' or 'Q' - Quit
         quitRequested = true
         
+      case 5 => // Ctrl+E - Easter egg toggle
+        easterEggToggleRequested = true
+        
       // Viewport Controls - accumulate viewport deltas
       case 43 | 61 => // '+' or '=' - Zoom in (= is easier on Mac without SHIFT)
         val newZoom = accumulatedViewportDelta.zoomFactor * 1.2
@@ -177,6 +186,13 @@ class KeyboardInputManager extends UserInteraction {
         
       case 118 | 86 => // 'v' or 'V' - Viewport reset
         viewportResetRequested = true
+        
+      // Scale Controls
+      case 91 => // '[' - Scale down
+        accumulatedScaleFactor = 0.9  // Scale down by 10%
+        
+      case 93 => // ']' - Scale up
+        accumulatedScaleFactor = 1.1  // Scale up by 10%
         
       case _ => // Ignore other keys
     }
