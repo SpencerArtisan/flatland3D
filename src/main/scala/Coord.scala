@@ -23,4 +23,22 @@ case class Coord(x: Double, y: Double, z: Double) {
 
 object Coord {
   val ZERO: Coord = Coord(0, 0, 0)
+  
+  // Utility methods
+  def distance(from: Coord, to: Coord): Double = (to - from).magnitude
+  
+  def midpoint(a: Coord, b: Coord): Coord = Coord(
+    (a.x + b.x) / 2,
+    (a.y + b.y) / 2,
+    (a.z + b.z) / 2
+  )
+  
+  def lerp(a: Coord, b: Coord, t: Double): Coord = {
+    require(t >= 0.0 && t <= 1.0, "Interpolation factor must be between 0 and 1")
+    Coord(
+      a.x + (b.x - a.x) * t,
+      a.y + (b.y - a.y) * t,
+      a.z + (b.z - a.z) * t
+    )
+  }
 }

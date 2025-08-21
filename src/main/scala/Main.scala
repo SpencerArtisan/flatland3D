@@ -1,14 +1,21 @@
 object Main {
+  // Configuration constants
   private val CLEAR = "\u001b[2J"
   private val BLOCK = '\u2588'
   private val SHAPE_ID = 101
+  private val WORLD_SIZE = 22
+  private val CUBE_SIZE = 10
+  private val CUBE_CENTER = Coord(11, 11, 11)
+  private val FRAME_DELAY_MS = 66
+  private val YAW_ROTATION_RATE = Math.PI / -36
+  private val ROLL_ROTATION_RATE = Math.PI / 72
 
   def main(args: Array[String]): Unit =
     animate(buildAnimationFrames(buildWorld))
 
   private def buildWorld =
-    World(22, 22, 22)
-      .add(TriangleShapes.cube(SHAPE_ID, 10), Coord(11, 11, 11), Rotation.ZERO)
+    World(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE)
+      .add(TriangleShapes.cube(SHAPE_ID, CUBE_SIZE), CUBE_CENTER, Rotation.ZERO)
 
   private def buildAnimationFrames(world: World): Seq[String] =
     LazyList.from(0).map { frameIndex =>
@@ -16,9 +23,9 @@ object Main {
         case Right(w) =>
           val rendered = Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
           val rotation = Rotation(
-            yaw = frameIndex * Math.PI / -36,
+            yaw = frameIndex * YAW_ROTATION_RATE,
             pitch = 0,
-            roll = frameIndex * Math.PI / 72
+            roll = frameIndex * ROLL_ROTATION_RATE
           )
           addRotationDetails(rendered, frameIndex, rotation)
         case Left(_) => "" // Skip errors
@@ -29,7 +36,7 @@ object Main {
     frames.foreach { frame =>
       Console.print(CLEAR)
       Console.print(frame)
-      Thread.sleep(66)
+      Thread.sleep(FRAME_DELAY_MS)
     }
   }
 
@@ -51,13 +58,13 @@ object Main {
   private def rotateShapes(world: World, frameIndex: Int): Either[NoSuchShape, World] = {
     // Apply cumulative rotation from the start position for smooth animation
     val totalRotation = Rotation(
-      yaw = frameIndex * Math.PI / -36,    // Total yaw rotation up to this frame
-      pitch = 0,                           // No pitch rotation
-      roll = frameIndex * Math.PI / 72     // Total roll rotation up to this frame
+      yaw = frameIndex * YAW_ROTATION_RATE,    // Total yaw rotation up to this frame
+      pitch = 0,                               // No pitch rotation
+      roll = frameIndex * ROLL_ROTATION_RATE   // Total roll rotation up to this frame
     )
     
     // Reset to start position and apply the total rotation
-    val worldWithReset = world.reset.add(TriangleShapes.cube(SHAPE_ID, 10), Coord(11, 11, 11), totalRotation)
+    val worldWithReset = world.reset.add(TriangleShapes.cube(SHAPE_ID, CUBE_SIZE), CUBE_CENTER, totalRotation)
     Right(worldWithReset)
   }
 }

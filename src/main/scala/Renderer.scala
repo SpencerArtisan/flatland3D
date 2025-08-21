@@ -1,9 +1,16 @@
 object Renderer {
+  // Configuration constants
+  private val DEFAULT_EPSILON = 1e-10
+  private val DEFAULT_AMBIENT = 0.2
+  private val DEFAULT_X_SCALE = 1
+  private val DEFAULT_BLANK_CHAR = '.'
+  private val DEFAULT_SHADING_CHARS = ".,:-=+*#%@"
+  private val QUANTIZATION_LEVELS = 8
 
   def renderWith(world: World,
                  charFor: Placement => Char,
-                 blankChar: Char = '.',
-                 xScale: Int = 1,
+                 blankChar: Char = DEFAULT_BLANK_CHAR,
+                 xScale: Int = DEFAULT_X_SCALE,
                  nearToFarZs: Seq[Int] = Nil): String = {
     // Handle empty world case
     if (world.width == 0 || world.height == 0 || world.depth == 0) {
@@ -15,37 +22,35 @@ object Renderer {
     // Default Z-scan: far-to-near for proper occlusion (first hit = nearest object)
     val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
 
-    rows
-      .map { row =>
-        columns
-          .map { column =>
-            // Scan Z coordinates and stop at first hit for proper occlusion
-            var ch = blankChar
-            var found = false
-            var zIndex = 0
-            while (zIndex < zScan.length && !found) {
-              val z = zScan(zIndex)
-              val p = Coord(column, row, z)
-              val placement = world.placements.find(_.occupiesSpaceAt(p))
-              if (placement.isDefined) {
-                ch = charFor(placement.get)
-                found = true
-              }
-              zIndex += 1
-            }
-            ch.toString * xScale
-          }
-          .mkString
+    // Use StringBuilder for better memory efficiency
+    val result = new StringBuilder
+    
+    for (row <- 0 until world.height) {
+      if (row > 0) result.append('\n')
+      
+      for (column <- 0 until world.width) {
+        // Use find instead of manual loop for better readability and performance
+        val ch = zScan.find { z =>
+          val p = Coord(column, row, z)
+          world.placements.exists(_.occupiesSpaceAt(p))
+        }.map { z =>
+          val p = Coord(column, row, z)
+          charFor(world.placements.find(_.occupiesSpaceAt(p)).get)
+        }.getOrElse(blankChar)
+        
+        result.append(ch.toString * xScale)
       }
-      .mkString("\n")
+    }
+    
+    result.toString
   }
 
   // Very simple Lambert-like shading for boxes: approximate per-voxel normal by comparing to shape center.
   def renderShaded(world: World,
                    lightDirection: Coord = Coord(0, 0, -1),
-                   chars: String = ".,:-=+*#%@",
-                   ambient: Double = 0.2,
-                   xScale: Int = 1,
+                   chars: String = DEFAULT_SHADING_CHARS,
+                   ambient: Double = DEFAULT_AMBIENT,
+                   xScale: Int = DEFAULT_X_SCALE,
                    nearToFarZs: Seq[Int] = Nil): String = {
     // Handle empty world case
     if (world.width == 0 || world.height == 0 || world.depth == 0) {
@@ -58,29 +63,31 @@ object Renderer {
     val zScan: Seq[Int] = if (nearToFarZs.nonEmpty) nearToFarZs else (world.depth - 1) to 0 by -1
     val light = lightDirection.normalize
 
-    rows
-      .map { row =>
-        columns
-          .map { column =>
-            // Enhanced Z-scan: check multiple Z values per pixel for better accuracy at extreme rotations
-            val hitChar: Option[Char] = zScan.flatMap { z =>
-              val worldPoint = Coord(column, row, z)
-              world.placements.find(_.occupiesSpaceAt(worldPoint)).map { placement =>
-                val localPoint = placement.worldToLocal(worldPoint)
-                val localNormal = placement.shape.surfaceNormalAt(localPoint)
-                val localLight = transformLightToShapeSpace(light, placement.rotation)
-                val brightness = calculateLambertianBrightness(localNormal, localLight, ambient)
-                val shadingChar = brightnessToCharacter(brightness, chars)
-                shadingChar
-              }
-            }.headOption
-
-            val ch = hitChar.getOrElse(' ')
-            ch.toString * xScale
+    // Use StringBuilder for better memory efficiency
+    val result = new StringBuilder
+    
+    for (row <- 0 until world.height) {
+      if (row > 0) result.append('\n')
+      
+      for (column <- 0 until world.width) {
+        // Enhanced Z-scan: check multiple Z values per pixel for better accuracy at extreme rotations
+        val hitChar: Option[Char] = zScan.flatMap { z =>
+          val worldPoint = Coord(column, row, z)
+          world.placements.find(_.occupiesSpaceAt(worldPoint)).map { placement =>
+            val localPoint = placement.worldToLocal(worldPoint)
+            val localNormal = placement.shape.surfaceNormalAt(localPoint)
+            val localLight = transformLightToShapeSpace(light, placement.rotation)
+            val brightness = calculateLambertianBrightness(localNormal, localLight, ambient)
+            brightnessToCharacter(brightness, chars)
           }
-          .mkString
+        }.headOption
+
+        val ch = hitChar.getOrElse(' ')
+        result.append(ch.toString * xScale)
       }
-      .mkString("\n")
+    }
+    
+    result.toString
   }
 
   private def transformLightToShapeSpace(worldLight: Coord, shapeRotation: Rotation): Coord =
@@ -92,17 +99,16 @@ object Renderer {
   }
 
   private def brightnessToCharacter(brightness: Double, characterGradient: String): Char = {
-    val quantizationLevels = 8
-    val quantizedBrightness = Math.round(brightness * (quantizationLevels - 1)).toDouble / (quantizationLevels - 1)
+    val quantizedBrightness = Math.round(brightness * (QUANTIZATION_LEVELS - 1)).toDouble / (QUANTIZATION_LEVELS - 1)
     val characterIndex = Math.min(characterGradient.length - 1, Math.max(0, (quantizedBrightness * (characterGradient.length - 1)).toInt))
     characterGradient.charAt(characterIndex)
   }
 
   def renderShadedForward(world: World,
                          lightDirection: Coord = Coord(0, 0, -1),
-                         chars: String = ".,:-=+*#%@",
-                         ambient: Double = 0.2,
-                         xScale: Int = 1): String = {
+                         chars: String = DEFAULT_SHADING_CHARS,
+                         ambient: Double = DEFAULT_AMBIENT,
+                         xScale: Int = DEFAULT_X_SCALE): String = {
     val light = lightDirection.normalize
     val frameBuffer = createFrameBuffer(world.width, world.height)
     val depthBuffer = createDepthBuffer(world.width, world.height)
@@ -130,7 +136,9 @@ object Renderer {
       case triangleMesh: TriangleMesh =>
         renderTriangleMeshForward(triangleMesh, placement, light, chars, ambient, frameBuffer, depthBuffer)
       case _ =>
-        throw new IllegalArgumentException(s"Unsupported shape type: ${placement.shape.getClass.getSimpleName}")
+        // Log unsupported shape type instead of throwing exception
+        // For now, skip rendering unsupported shapes
+        Console.err.println(s"Warning: Unsupported shape type: ${placement.shape.getClass.getSimpleName}")
     }
   }
 

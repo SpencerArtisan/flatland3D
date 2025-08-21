@@ -3,9 +3,13 @@ trait Shape {
   def center: Coord
   def occupiesSpaceAt(coord: Coord): Boolean
 
+  // Configuration constants
+  private val NORMAL_EPSILON = 0.5
+  private val FALLBACK_NORMAL = Coord(0, 0, 1)
+
   // Default: estimate local-space normal via occupancy gradient around the local point
   def surfaceNormalAt(local: Coord): Coord = {
-    val eps = 0.5
+    val eps = NORMAL_EPSILON
     val gx = (if (occupiesSpaceAt(Coord(local.x + eps, local.y, local.z))) 1 else 0) -
       (if (occupiesSpaceAt(Coord(local.x - eps, local.y, local.z))) 1 else 0)
     val gy = (if (occupiesSpaceAt(Coord(local.x, local.y + eps, local.z))) 1 else 0) -
@@ -13,13 +17,17 @@ trait Shape {
     val gz = (if (occupiesSpaceAt(Coord(local.x, local.y, local.z + eps))) 1 else 0) -
       (if (occupiesSpaceAt(Coord(local.x, local.y, local.z - eps))) 1 else 0)
     val grad = Coord(gx, gy, gz)
-    if (grad.magnitude == 0) Coord(0, 0, 1) else grad.normalize
+    if (grad.magnitude == 0) FALLBACK_NORMAL else grad.normalize
   }
 }
 
 
 // Triangle-based shapes for complex geometry
 case class Triangle(v0: Coord, v1: Coord, v2: Coord) {
+  // Configuration constants
+  private val PARALLEL_THRESHOLD = 1e-10
+  private val INTERSECTION_THRESHOLD = 1e-10
+  
   // Calculate triangle normal using cross product
   lazy val normal: Coord = {
     val edge1 = v1 - v0
@@ -38,7 +46,7 @@ case class Triangle(v0: Coord, v1: Coord, v2: Coord) {
     val a = edge1.dot(h)
     
     // Parallel ray check
-    if (Math.abs(a) < 1e-10) return None
+    if (Math.abs(a) < PARALLEL_THRESHOLD) return None
     
     val f = 1.0 / a
     val s = rayOrigin - v0
@@ -52,21 +60,24 @@ case class Triangle(v0: Coord, v1: Coord, v2: Coord) {
     if (v < 0.0 || u + v > 1.0) return None
     
     val t = f * edge2.dot(q)
-    if (t > 1e-10) Some(t) else None
+    if (t > INTERSECTION_THRESHOLD) Some(t) else None
   }
 }
 
 case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   val center: Coord = Coord(0, 0, 0)
   
+  // Configuration constants
+  private val RAY_DIRECTIONS = Seq(
+    Coord(1, 0, 0),
+    Coord(0, 1, 0),  
+    Coord(0, 0, 1),
+    Coord(1, 1, 0).normalize
+  )
+  
   def occupiesSpaceAt(coord: Coord): Boolean = {
     // For triangle meshes, we use ray-casting with multiple rays to handle edge cases
-    val rayDirections = Seq(
-      Coord(1, 0, 0),
-      Coord(0, 1, 0),  
-      Coord(0, 0, 1),
-      Coord(1, 1, 0).normalize
-    )
+    val rayDirections = RAY_DIRECTIONS
     
     // Test with multiple rays and use majority vote
     val results = rayDirections.map { rayDirection =>

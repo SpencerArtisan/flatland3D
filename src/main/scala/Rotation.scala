@@ -1,4 +1,5 @@
 case class Rotation(yaw: Double, pitch: Double, roll: Double) {
+  // Pre-compute trigonometric values for performance
   private val sinYaw = Math.sin(yaw)
   private val cosYaw = Math.cos(yaw)
   private val sinPitch = Math.sin(pitch)

@@ -1,8 +1,16 @@
 // Utility functions for creating common triangle-based shapes
 object TriangleShapes {
+  // Configuration constants
+  private val CUBE_TRIANGLES_PER_FACE = 2
+  private val CUBE_TOTAL_TRIANGLES = 12
+  private val TETRAHEDRON_FACES = 4
+  private val PYRAMID_BASE_TRIANGLES = 2
+  private val PYRAMID_SIDE_TRIANGLES = 4
+  private val PYRAMID_TOTAL_TRIANGLES = PYRAMID_BASE_TRIANGLES + PYRAMID_SIDE_TRIANGLES
   
   // Create a cube using triangles (2 triangles per face, 12 triangles total)
   def cube(id: Int, size: Double): TriangleMesh = {
+    require(size > 0, "Cube size must be positive")
     val half = size / 2
     
     // Define 8 vertices of the cube
@@ -49,6 +57,7 @@ object TriangleShapes {
   
   // Create a simple tetrahedron (4 triangular faces)
   def tetrahedron(id: Int, size: Double): TriangleMesh = {
+    require(size > 0, "Tetrahedron size must be positive")
     val vertices = Seq(
       Coord(0, size, 0),           // Top vertex
       Coord(-size, -size, -size),  // Base vertex 1
@@ -68,6 +77,8 @@ object TriangleShapes {
   
   // Create a pyramid with square base (5 faces: 1 square base + 4 triangular sides)
   def pyramid(id: Int, baseSize: Double, height: Double): TriangleMesh = {
+    require(baseSize > 0, "Pyramid base size must be positive")
+    require(height > 0, "Pyramid height must be positive")
     val half = baseSize / 2
     
     val vertices = Seq(

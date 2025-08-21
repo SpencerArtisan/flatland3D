@@ -1,4 +1,7 @@
 case class Placement(origin: Coord, rotation: Rotation, shape: Shape) {
+  // Validation
+  require(shape != null, "Shape cannot be null")
+  
   def occupiesSpaceAt(coord: Coord): Boolean = {
     // Transform world coordinate to local coordinate system
     val localCoord = worldToLocal(coord)
@@ -25,6 +28,8 @@ case class Placement(origin: Coord, rotation: Rotation, shape: Shape) {
   
   // Check if this placement would extend beyond world boundaries
   def wouldExtendBeyondBounds(worldWidth: Int, worldHeight: Int, worldDepth: Int): Boolean = {
+    require(worldWidth > 0 && worldHeight > 0 && worldDepth > 0, "World dimensions must be positive")
+    
     shape match {
       case triangleMesh: TriangleMesh =>
         // Check all vertices of the triangle mesh
@@ -38,7 +43,10 @@ case class Placement(origin: Coord, rotation: Rotation, shape: Shape) {
           worldVertex.y < 0 || worldVertex.y >= worldHeight ||
           worldVertex.z < 0 || worldVertex.z >= worldDepth
         }
-      case _ => false // Unknown shape type
+      case _ => 
+        // For other shape types, assume they don't extend beyond bounds
+        // This could be improved by adding bounds calculation to the Shape trait
+        false
     }
   }
 }

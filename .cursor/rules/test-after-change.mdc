@@ -1,0 +1,5 @@
+---
+description: always runs all tests after a change and fix any failures
+globs:
+alwaysApply: true
+---

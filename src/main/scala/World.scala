@@ -1,4 +1,8 @@
 case class World(width: Int, height: Int, depth: Int, private val shapes: Map[Int, Placement] = Map()) {
+  // Validation
+  require(width >= 0, "World width must be non-negative")
+  require(height >= 0, "World height must be non-negative")
+  require(depth >= 0, "World depth must be non-negative")
 
   def reset: World = World(width, height, depth)
 
