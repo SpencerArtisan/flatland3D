@@ -32,21 +32,21 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
     keyboardInput.isResetRequested should be(false)
   }
 
-  it should "process WASD keys correctly" in {
+  it should "process KLIO keys correctly" in {
     // Test individual key processing directly
-    keyboardInput.processInput(119) // 'w' - Pitch up
-    keyboardInput.processInput(97)  // 'a' - Yaw left
+    keyboardInput.processInput(107) // 'k' - Pitch up
+    keyboardInput.processInput(105) // 'i' - Yaw left
     
     val rotationDelta = keyboardInput.getRotationDelta
-    rotationDelta.yaw should be < 0.0  // 'a' = yaw left (negative)
-    rotationDelta.pitch should be > 0.0 // 'w' = pitch up (positive)
+    rotationDelta.yaw should be < 0.0  // 'i' = yaw left (negative)
+    rotationDelta.pitch should be > 0.0 // 'k' = pitch up (positive)
   }
 
-  it should "process ZX keys for roll" in {
-    keyboardInput.processInput(122) // 'z' - Roll left
+  it should "process MJ keys for roll" in {
+    keyboardInput.processInput(109) // 'm' - Roll left
     
     val rotationDelta = keyboardInput.getRotationDelta
-    rotationDelta.roll should be < 0.0 // 'z' = roll left (negative)
+    rotationDelta.roll should be < 0.0 // 'm' = roll left (negative)
   }
 
   it should "handle reset key correctly" in {
@@ -74,7 +74,7 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
   }
 
   it should "handle case-insensitive keys" in {
-    val input = "W\nA\nS\nD\n"
+    val input = "K\nL\nI\nO\n"
     System.setIn(new ByteArrayInputStream(input.getBytes))
     
     keyboardInput.start()
@@ -128,7 +128,7 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
 
   it should "combine rotation and viewport controls" in {
     // Test rotation
-    keyboardInput.processInput(119) // 'w'
+    keyboardInput.processInput(107) // 'k'
     val rotationDelta = keyboardInput.getRotationDelta
     rotationDelta.pitch should be > 0.0
     

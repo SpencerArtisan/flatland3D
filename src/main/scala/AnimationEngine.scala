@@ -281,7 +281,7 @@ class AnimationEngine(
       val scaleInfo = f"Scale: ${currentScale}%.1fx"
       val controlsLines = Seq(
         "",
-        "Rotation: WASD = Rotate, Z/X = Roll, R = Reset",
+        "Rotation: KLIO = Rotate, M/J = Roll, R = Reset",
         "Viewport: +/=/- = Zoom, Arrow Keys = Pan, V = Reset Viewport",
         "Scale: [ = Smaller, ] = Larger",
         s"System: Q/ESC = Quit, Ctrl+E = Elite Mode$easterEggStatus ($scaleInfo)"

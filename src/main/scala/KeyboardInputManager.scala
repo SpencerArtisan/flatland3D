@@ -148,22 +148,22 @@ class KeyboardInputManager extends UserInteraction {
     // Handle regular keys
     key match {
       // WASD Controls - accumulate rotation deltas
-      case 119 | 87 => // 'w' or 'W' - Pitch up (look up)
+      case 107 | 75 => // 'k' or 'K' - Pitch up (look up)
         accumulatedRotationDelta = accumulatedRotationDelta.copy(pitch = accumulatedRotationDelta.pitch + rotationStep)
         
-      case 115 | 83 => // 's' or 'S' - Pitch down (look down)
+      case 108 | 76 => // 'l' or 'L' - Pitch down (look down)
         accumulatedRotationDelta = accumulatedRotationDelta.copy(pitch = accumulatedRotationDelta.pitch - rotationStep)
         
-      case 97 | 65 => // 'a' or 'A' - Yaw left (turn left)
+      case 105 | 73 => // 'i' or 'I' - Yaw left (turn left)
         accumulatedRotationDelta = accumulatedRotationDelta.copy(yaw = accumulatedRotationDelta.yaw - rotationStep)
         
-      case 100 | 68 => // 'd' or 'D' - Yaw right (turn right)
+      case 111 | 79 => // 'o' or 'O' - Yaw right (turn right)
         accumulatedRotationDelta = accumulatedRotationDelta.copy(yaw = accumulatedRotationDelta.yaw + rotationStep)
         
-      case 122 | 90 => // 'z' or 'Z' - Roll left (roll counterclockwise)
+      case 109 | 77 => // 'm' or 'M' - Roll left (roll counterclockwise)
         accumulatedRotationDelta = accumulatedRotationDelta.copy(roll = accumulatedRotationDelta.roll - rotationStep)
         
-      case 120 | 88 => // 'x' or 'X' - Roll right (roll clockwise)
+      case 106 | 74 => // 'j' or 'J' - Roll right (roll clockwise)
         accumulatedRotationDelta = accumulatedRotationDelta.copy(roll = accumulatedRotationDelta.roll + rotationStep)
         
       case 114 | 82 => // 'r' or 'R' - Reset rotation

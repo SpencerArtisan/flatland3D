@@ -57,13 +57,13 @@ class KeyboardInputManager {
   
   def processInput(key: Char): Unit = {
     key match {
-      case 'A' | 'a' => // Up arrow or 'A' key
+      case 'K' | 'k' => // 'K' key - Pitch up
         currentRotation = currentRotation.copy(pitch = currentRotation.pitch + rotationStep)
-      case 'B' | 'b' => // Down arrow or 'B' key  
+      case 'L' | 'l' => // 'L' key - Pitch down
         currentRotation = currentRotation.copy(pitch = currentRotation.pitch - rotationStep)
-      case 'D' | 'd' => // Left arrow or 'D' key
+      case 'I' | 'i' => // 'I' key - Yaw left
         currentRotation = currentRotation.copy(yaw = currentRotation.yaw - rotationStep)
-      case 'C' | 'c' => // Right arrow or 'C' key
+      case 'O' | 'o' => // 'O' key - Yaw right
         currentRotation = currentRotation.copy(yaw = currentRotation.yaw + rotationStep)
       case 'q' | 'Q' => // Quit
         // Signal to exit application
@@ -168,9 +168,10 @@ private def renderFrame(world: World, rotation: Rotation): String = {
 
 private def createControlsDisplay(): String = {
   """Controls:
-    |  ↑/A: Pitch Up    ↓/B: Pitch Down
-    |  ←/D: Yaw Left    →/C: Yaw Right
-    |  R: Reset         Q: Quit""".stripMargin
+    |  K: Pitch Up    L: Pitch Down
+    |  I: Yaw Left    O: Yaw Right
+    |  M: Roll Left   J: Roll Right
+    |  R: Reset       Q: Quit""".stripMargin
 }
 
 private def createRotationDisplay(rotation: Rotation): String = {
@@ -251,10 +252,10 @@ object InputConfig {
   val INPUT_POLL_RATE_MS = 16  // ~60 FPS input polling
   
   // Key mappings
-  val PITCH_UP_KEYS = Set('A', 'a', '\u001B[A')    // Up arrow
-  val PITCH_DOWN_KEYS = Set('B', 'b', '\u001B[B')  // Down arrow  
-  val YAW_LEFT_KEYS = Set('D', 'd', '\u001B[D')    // Left arrow
-  val YAW_RIGHT_KEYS = Set('C', 'c', '\u001B[C')   // Right arrow
+  val PITCH_UP_KEYS = Set('K', 'k')    // K key
+  val PITCH_DOWN_KEYS = Set('L', 'l')  // L key  
+  val YAW_LEFT_KEYS = Set('I', 'i')    // I key
+  val YAW_RIGHT_KEYS = Set('O', 'o')   // O key
   val RESET_KEYS = Set('R', 'r')
   val QUIT_KEYS = Set('Q', 'q', '\u0003')          // Q or Ctrl+C
 }

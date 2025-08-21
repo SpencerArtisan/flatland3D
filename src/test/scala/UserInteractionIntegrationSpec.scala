@@ -18,8 +18,8 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
     )
     
     // Simulate user input
-    keyboardInteraction.processInput('w') // Pitch up
-    keyboardInteraction.processInput('a') // Yaw left
+    keyboardInteraction.processInput('k') // Pitch up
+    keyboardInteraction.processInput('i') // Yaw left
     engine.processDeltas() // Process the deltas to update internal state
     
     val result = engine.rotateShapes(0)
