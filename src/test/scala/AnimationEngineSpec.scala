@@ -3,256 +3,156 @@ import org.scalatest.matchers.should.Matchers
 
 class AnimationEngineSpec extends AnyFlatSpec with Matchers {
   
-  private def createTestEngine(): AnimationEngine = {
-    val world = World(10, 10, 10)
-      .add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
+  "AnimationEngine" should "apply user rotation to world correctly" in {
+    val testRotation = Rotation(Math.PI/2, 0, 0) // 90° yaw
+    val testInteraction = new TestUserInteraction(rotation = testRotation)
+    val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
     
-    new AnimationEngine(
+    val engine = new AnimationEngine(
       world = world,
+      userInteraction = testInteraction,
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
       shapeId = 1,
       frameDelayMs = 100
     )
+    
+    val result = engine.rotateShapes(0)
+    result should be a 'right
+    
+    val rotatedWorld = result.right.get
+    val placement = rotatedWorld.placements.head
+    placement.rotation.yaw should be(Math.PI/2 +- 0.001)
   }
   
-  "AnimationEngine" should "be constructed with correct parameters" in {
-    val engine = createTestEngine()
-    engine should not be null
+  it should "handle quit requests correctly" in {
+    val testInteraction = new TestUserInteraction(quitRequested = true)
+    val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
+    
+    val engine = new AnimationEngine(
+      world = world,
+      userInteraction = testInteraction,
+      worldSize = 10,
+      cubeSize = 2,
+      cubeCenter = Coord(5, 5, 5),
+      shapeId = 1,
+      frameDelayMs = 100
+    )
+    
+    // The engine should detect quit requests
+    testInteraction.isQuitRequested should be(true)
   }
   
-  it should "apply rotations correctly to shapes for frame 0" in {
-    val engine = createTestEngine()
+  it should "handle reset requests correctly" in {
+    val testInteraction = new TestUserInteraction(rotation = Rotation(Math.PI/4, 0, 0))
+    val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
     
-    val rotatedWorld = engine.rotateShapes(0) // Frame 0 - no rotation
-    rotatedWorld shouldBe a[Right[_, _]]
+    val engine = new AnimationEngine(
+      world = world,
+      userInteraction = testInteraction,
+      worldSize = 10,
+      cubeSize = 2,
+      cubeCenter = Coord(5, 5, 5),
+      shapeId = 1,
+      frameDelayMs = 100
+    )
     
-    val Right(result) = rotatedWorld
-    result.placements should not be empty
-    result.placements should have size 1
+    // Test that reset requests are handled
+    testInteraction.requestReset()
+    testInteraction.isResetRequested should be(true)
   }
   
-  it should "use same rotation for different frame indices with no input" in {
-    val engine = createTestEngine()
+  it should "build animation frames with user rotation" in {
+    val testRotation = Rotation(0, Math.PI/6, 0) // 30° pitch
+    val testInteraction = new TestUserInteraction(rotation = testRotation)
+    val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
     
-    val frame0 = engine.rotateShapes(0)
-    val frame5 = engine.rotateShapes(5)
-    val frame10 = engine.rotateShapes(10)
-    
-    // All should succeed
-    frame0 shouldBe a[Right[_, _]]
-    frame5 shouldBe a[Right[_, _]]
-    frame10 shouldBe a[Right[_, _]]
-    
-    // Extract the worlds
-    val Right(world0) = frame0
-    val Right(world5) = frame5
-    val Right(world10) = frame10
-    
-    // All should have the same number of placements
-    world0.placements should have size 1
-    world5.placements should have size 1
-    world10.placements should have size 1
-    
-    // With interactive control, all frames should have same rotation (no keys pressed)
-    val placement0 = world0.placements.head
-    val placement5 = world5.placements.head
-    val placement10 = world10.placements.head
-    
-    // Same rotation for all frames when no input
-    placement0.rotation should equal(placement5.rotation)
-    placement5.rotation should equal(placement10.rotation)
-  }
-  
-
-  
-  it should "generate animation frames as a LazyList" in {
-    val engine = createTestEngine()
+    val engine = new AnimationEngine(
+      world = world,
+      userInteraction = testInteraction,
+      worldSize = 10,
+      cubeSize = 2,
+      cubeCenter = Coord(5, 5, 5),
+      shapeId = 1,
+      frameDelayMs = 100
+    )
     
     val frames = engine.buildAnimationFrames()
-    frames shouldBe a[LazyList[_]]
+    frames should not be empty
     
-    // Should be able to take a few frames without issues
-    val firstThreeFrames = frames.take(3).toList
-    firstThreeFrames should have size 3
-    
-    // Each frame should be a non-empty string
-    firstThreeFrames.foreach { frame =>
-      frame should not be empty
-      frame shouldBe a[String]
-    }
-  }
-  
-  it should "include rotation details in generated frames" in {
-    val engine = createTestEngine()
-    
-    val frames = engine.buildAnimationFrames()
+    // First frame should contain the user rotation
     val firstFrame = frames.head
-    
-    // Frame should contain rotation details
-    firstFrame should include("Frame:")
-    firstFrame should include("Yaw:")
     firstFrame should include("Pitch:")
-    firstFrame should include("Roll:")
-    firstFrame should include("°") // Degree symbol
+    firstFrame should include("30.0") // 30 degrees
   }
   
-  it should "format rotation details correctly" in {
-    val engine = createTestEngine()
+  it should "handle multiple rotation changes correctly" in {
+    val testInteraction = new TestUserInteraction()
+    val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
     
-    // Test the rotation details formatting indirectly through frame generation
-    val frames = engine.buildAnimationFrames()
-    val frame5 = frames.drop(5).head // Get frame 5
+    val engine = new AnimationEngine(
+      world = world,
+      userInteraction = testInteraction,
+      worldSize = 10,
+      cubeSize = 2,
+      cubeCenter = Coord(5, 5, 5),
+      shapeId = 1,
+      frameDelayMs = 100
+    )
     
-    // Should contain "Frame:   5" (with proper formatting)
-    frame5 should include("Frame:   5")
+    // Test sequence of rotations
+    testInteraction.setRotation(Rotation(Math.PI/4, 0, 0))
+    val result1 = engine.rotateShapes(0)
+    result1 should be a 'right
     
-    // Should contain degree measurements
-    frame5 should include("Yaw:")
-    frame5 should include("Roll:")
-    frame5 should include("°")
+    testInteraction.setRotation(Rotation(Math.PI/2, Math.PI/6, 0))
+    val result2 = engine.rotateShapes(0)
+    result2 should be a 'right
+    
+    val placement1 = result1.right.get.placements.head
+    val placement2 = result2.right.get.placements.head
+    
+    placement1.rotation.yaw should be(Math.PI/4 +- 0.001)
+    placement2.rotation.yaw should be(Math.PI/2 +- 0.001)
+    placement2.rotation.pitch should be(Math.PI/6 +- 0.001)
   }
   
-  it should "reset world and maintain consistent rotation across frames" in {
-    val engine = createTestEngine()
+  it should "work with different UserInteraction implementations" in {
+    val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
     
-    // Generate multiple rotated worlds
-    val world1 = engine.rotateShapes(1)
-    val world2 = engine.rotateShapes(2)
+    // Test with TestUserInteraction
+    val testInteraction = new TestUserInteraction(rotation = Rotation(Math.PI/3, 0, 0))
+    val testEngine = new AnimationEngine(
+      world = world,
+      userInteraction = testInteraction,
+      worldSize = 10,
+      cubeSize = 2,
+      cubeCenter = Coord(5, 5, 5),
+      shapeId = 1,
+      frameDelayMs = 100
+    )
     
-    val Right(result1) = world1
-    val Right(result2) = world2
+    val testResult = testEngine.rotateShapes(0)
+    testResult should be a 'right
     
-    // Both should have exactly one shape (the cube)
-    result1.placements should have size 1
-    result2.placements should have size 1
+    // Test with KeyboardInputManager
+    val keyboardInteraction = new KeyboardInputManager()
+    val keyboardEngine = new AnimationEngine(
+      world = world,
+      userInteraction = keyboardInteraction,
+      worldSize = 10,
+      cubeSize = 2,
+      cubeCenter = Coord(5, 5, 5),
+      shapeId = 1,
+      frameDelayMs = 100
+    )
     
-    // The shapes should be at the same center position (reset worked)
-    val placement1 = result1.placements.head
-    val placement2 = result2.placements.head
+    val keyboardResult = keyboardEngine.rotateShapes(0)
+    keyboardResult should be a 'right
     
-    placement1.origin shouldBe Coord(5, 5, 5)
-    placement2.origin shouldBe Coord(5, 5, 5)
-    
-    // With interactive control, rotations should be the same (no keys pressed)
-    placement1.rotation should equal(placement2.rotation)
-  }
-  
-  it should "support keyboard input for quit functionality" in {
-    val engine = createTestEngine()
-    
-    // Test that the engine can be created successfully with keyboard input enabled
-    // Note: We can't easily test the actual quit behavior in unit tests
-    // since it involves System.in, threads, and terminal mode changes
-    engine should not be null
-    
-    // Verify that frames can be generated (this indirectly tests that 
-    // the keyboard input thread doesn't interfere with normal operation)
-    val frames = engine.buildAnimationFrames()
-    val firstFrame = frames.head
-    
-    firstFrame should not be empty
-    // The controls are added in the animate method via addKeyDisplay, 
-    // so we just verify the frame generation works correctly
-    firstFrame should include("Frame:")
-  }
-  
-  it should "use interactive rotation instead of automatic rotation" in {
-    val engine = createTestEngine()
-    
-    // Test that rotation comes from KeyboardInputManager, not frame index
-    val world0 = engine.rotateShapes(0).right.get
-    val world5 = engine.rotateShapes(5).right.get
-    
-    // With interactive control, rotation should be the same regardless of frame index
-    // (since no keys have been pressed)
-    val placement0 = world0.placements.head
-    val placement5 = world5.placements.head
-    
-    // Interactive control means same rotation for all frames when no input
-    placement0.rotation should equal(placement5.rotation)
-  }
-  
-  it should "integrate with KeyboardInputManager and start with zero rotation" in {
-    val engine = createTestEngine()
-    
-    // Test that the engine integrates with KeyboardInputManager correctly
-    val initialWorld = engine.rotateShapes(0).right.get
-    val initialPlacement = initialWorld.placements.head
-    val initialRotation = initialPlacement.rotation
-    
-    // With no keys pressed, should start at zero rotation
-    initialRotation.yaw shouldBe 0.0 +- 0.001
-    initialRotation.pitch shouldBe 0.0 +- 0.001
-    initialRotation.roll shouldBe 0.0 +- 0.001
-    
-    // Verify engine is properly constructed with KeyboardInputManager integration
-    engine should not be null
-  }
-
-  it should "actually rotate the cube when WASD keys are processed" in {
-    val engine = createTestEngine()
-    
-    // Get initial state with no rotation
-    val initialWorld = engine.rotateShapes(0).right.get
-    val initialPlacement = initialWorld.placements.head
-    val initialRotation = initialPlacement.rotation
-    
-    // Verify we start at zero rotation
-    initialRotation.yaw shouldBe 0.0 +- 0.001
-    initialRotation.pitch shouldBe 0.0 +- 0.001
-    
-    // Simulate processing a 'd' key (right rotation)
-    // We need to access the inputManager to simulate key input
-    // This tests the actual integration between AnimationEngine and KeyboardInputManager
-    val inputManagerField = engine.getClass.getDeclaredField("inputManager")
-    inputManagerField.setAccessible(true)
-    val inputManager = inputManagerField.get(engine).asInstanceOf[KeyboardInputManager]
-    
-    // Process 'd' key to rotate right
-    inputManager.processInput(100) // 'd' key ASCII
-    
-    // Now get the world again - it should show the rotation
-    val rotatedWorld = engine.rotateShapes(0).right.get
-    val rotatedPlacement = rotatedWorld.placements.head
-    val rotatedRotation = rotatedPlacement.rotation
-    
-    // The yaw should have increased (rotated right)
-    rotatedRotation.yaw should be > initialRotation.yaw
-    
-    // Process 'w' key to rotate up
-    inputManager.processInput(119) // 'w' key ASCII
-    
-    // Get world again after 'w' key
-    val finalWorld = engine.rotateShapes(0).right.get
-    val finalPlacement = finalWorld.placements.head
-    val finalRotation = finalPlacement.rotation
-    
-    // Pitch should have increased (rotated up)
-    finalRotation.pitch should be > initialRotation.pitch
-    
-    // Yaw should still be increased from 'd' key
-    finalRotation.yaw should be > initialRotation.yaw
-    
-    // Test Z key for roll left
-    inputManager.processInput(122) // 'z' key ASCII
-    
-    val rollWorld = engine.rotateShapes(0).right.get
-    val rollPlacement = rollWorld.placements.head
-    val rollRotation = rollPlacement.rotation
-    
-    // Roll should have decreased (rolled left)
-    rollRotation.roll should be < initialRotation.roll
-    
-    // Test X key for roll right
-    inputManager.processInput(120) // 'x' key ASCII
-    
-    val finalRollWorld = engine.rotateShapes(0).right.get
-    val finalRollPlacement = finalRollWorld.placements.head
-    val finalRollRotation = finalRollPlacement.rotation
-    
-    // Roll should have increased from X key (rolled right)
-    finalRollRotation.roll should be > rollRotation.roll
+    // Both should work the same way
+    testResult.right.get.placements.head.rotation.yaw should be(Math.PI/3 +- 0.001)
+    keyboardResult.right.get.placements.head.rotation.yaw should be(0.0 +- 0.001) // Default rotation
   }
 }

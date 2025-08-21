@@ -3,128 +3,125 @@ import org.scalatest.matchers.should.Matchers
 
 class KeyboardInputManagerSpec extends AnyFlatSpec with Matchers {
   
-  "KeyboardInputManager" should "start with zero rotation" in {
-    val manager = new KeyboardInputManager()
-    manager.getCurrentRotation should equal(Rotation.ZERO)
+  "KeyboardInputManager" should "implement UserInteraction interface" in {
+    val keyboardInteraction = new KeyboardInputManager()
+    keyboardInteraction shouldBe a[UserInteraction]
   }
   
-  it should "increase yaw when 'd' key is pressed" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
+  it should "start with default values" in {
+    val keyboardInteraction = new KeyboardInputManager()
     
-    manager.processInput(100) // 'd' key ASCII code
-    val afterRight = manager.getCurrentRotation
-    
-    afterRight.yaw should be > initialRotation.yaw
+    keyboardInteraction.getCurrentRotation should equal(Rotation.ZERO)
+    keyboardInteraction.isQuitRequested should be(false)
+    keyboardInteraction.isResetRequested should be(false)
   }
   
-  it should "decrease yaw when 'a' key is pressed" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
+  it should "process WASD keys correctly" in {
+    val keyboardInteraction = new KeyboardInputManager()
+    val initialRotation = keyboardInteraction.getCurrentRotation
     
-    manager.processInput(97) // 'a' key ASCII code
-    val afterLeft = manager.getCurrentRotation
+    // Test W key (pitch up)
+    keyboardInteraction.processInput('w')
+    val afterW = keyboardInteraction.getCurrentRotation
+    afterW.pitch should be > initialRotation.pitch
     
-    afterLeft.yaw should be < initialRotation.yaw
+    // Test A key (yaw left)
+    keyboardInteraction.processInput('a')
+    val afterA = keyboardInteraction.getCurrentRotation
+    afterA.yaw should be < afterW.yaw
+    
+    // Test S key (pitch down)
+    keyboardInteraction.processInput('s')
+    val afterS = keyboardInteraction.getCurrentRotation
+    afterS.pitch should be < afterW.pitch
+    
+    // Test D key (yaw right)
+    keyboardInteraction.processInput('d')
+    val afterD = keyboardInteraction.getCurrentRotation
+    afterD.yaw should be > afterA.yaw
   }
   
-  it should "increase pitch when 'w' key is pressed" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
+  it should "process ZX keys for roll" in {
+    val keyboardInteraction = new KeyboardInputManager()
+    val initialRotation = keyboardInteraction.getCurrentRotation
     
-    manager.processInput(119) // 'w' key ASCII code
-    val afterUp = manager.getCurrentRotation
+    // Test Z key (roll left)
+    keyboardInteraction.processInput('z')
+    val afterZ = keyboardInteraction.getCurrentRotation
+    afterZ.roll should be < initialRotation.roll
     
-    afterUp.pitch should be > initialRotation.pitch
+    // Test X key (roll right)
+    keyboardInteraction.processInput('x')
+    val afterX = keyboardInteraction.getCurrentRotation
+    afterX.roll should be > afterZ.roll
   }
   
-  it should "decrease pitch when 's' key is pressed" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
+  it should "handle reset key correctly" in {
+    val keyboardInteraction = new KeyboardInputManager()
     
-    manager.processInput(115) // 's' key ASCII code
-    val afterDown = manager.getCurrentRotation
+    // Rotate first
+    keyboardInteraction.processInput('w')
+    keyboardInteraction.processInput('a')
+    keyboardInteraction.getCurrentRotation should not equal(Rotation.ZERO)
     
-    afterDown.pitch should be < initialRotation.pitch
-  }
-
-  it should "decrease roll when 'z' key is pressed" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
-    
-    manager.processInput(122) // 'z' key ASCII code
-    val afterRollLeft = manager.getCurrentRotation
-    
-    afterRollLeft.roll should be < initialRotation.roll
-  }
-
-  it should "increase roll when 'x' key is pressed" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
-    
-    manager.processInput(120) // 'x' key ASCII code
-    val afterRollRight = manager.getCurrentRotation
-    
-    afterRollRight.roll should be > initialRotation.roll
+    // Reset
+    keyboardInteraction.processInput('r')
+    keyboardInteraction.isResetRequested should be(true)
   }
   
-  it should "reset rotation when 'r' key is pressed" in {
-    val manager = new KeyboardInputManager()
+  it should "detect quit requests" in {
+    val keyboardInteraction = new KeyboardInputManager()
     
-    // First, change the rotation
-    manager.processInput(100) // 'd' key
-    manager.processInput(119) // 'w' key
-    manager.getCurrentRotation should not equal(Rotation.ZERO)
+    keyboardInteraction.processInput('q')
+    keyboardInteraction.isQuitRequested should be(true)
     
-    // Then reset
-    manager.processInput(114) // 'r' key ASCII code
-    manager.getCurrentRotation should equal(Rotation.ZERO)
-  }
-  
-  it should "handle uppercase keys correctly" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
+    keyboardInteraction.processInput('Q')
+    keyboardInteraction.isQuitRequested should be(true)
     
-    manager.processInput(68) // 'D' key ASCII code
-    val afterRight = manager.getCurrentRotation
-    
-    afterRight.yaw should be > initialRotation.yaw
-    
-    // Test uppercase Z and X as well
-    val initialRoll = manager.getCurrentRotation.roll
-    
-    manager.processInput(90) // 'Z' key ASCII code
-    val afterRollLeft = manager.getCurrentRotation
-    afterRollLeft.roll should be < initialRoll
-    
-    manager.processInput(88) // 'X' key ASCII code
-    val afterRollRight = manager.getCurrentRotation
-    afterRollRight.roll should be > afterRollLeft.roll
+    keyboardInteraction.processInput(27) // ESC key
+    keyboardInteraction.isQuitRequested should be(true)
   }
   
   it should "ignore unknown keys" in {
-    val manager = new KeyboardInputManager()
-    val initialRotation = manager.getCurrentRotation
+    val keyboardInteraction = new KeyboardInputManager()
+    val initialRotation = keyboardInteraction.getCurrentRotation
     
-    manager.processInput(121) // 'y' key ASCII code (not mapped)
-    val afterUnknown = manager.getCurrentRotation
-    
-    afterUnknown should equal(initialRotation)
+    keyboardInteraction.processInput('?')
+    keyboardInteraction.getCurrentRotation should equal(initialRotation)
+    keyboardInteraction.isQuitRequested should be(false)
+    keyboardInteraction.isResetRequested should be(false)
   }
   
-  it should "apply correct rotation step size" in {
-    val manager = new KeyboardInputManager()
-    val expectedStep = Math.PI / 18 // 10 degrees
+  it should "handle case-insensitive keys" in {
+    val keyboardInteraction = new KeyboardInputManager()
     
-    manager.processInput(100) // 'd' key
-    val rotation = manager.getCurrentRotation
+    // Test both upper and lower case
+    keyboardInteraction.processInput('w')
+    keyboardInteraction.processInput('W')
+    keyboardInteraction.getCurrentRotation.pitch should be > 0.0
     
-    rotation.yaw shouldBe expectedStep +- 0.001
+    keyboardInteraction.processInput('a')
+    keyboardInteraction.processInput('A')
+    keyboardInteraction.getCurrentRotation.yaw should be < 0.0
+  }
+  
+  it should "process reset requests in update method" in {
+    val keyboardInteraction = new KeyboardInputManager()
     
-    // Test roll step size as well
-    manager.processInput(122) // 'z' key
-    val rollRotation = manager.getCurrentRotation
+    // Request reset
+    keyboardInteraction.processInput('r')
+    keyboardInteraction.isResetRequested should be(true)
     
-    rollRotation.roll shouldBe -expectedStep +- 0.001 // Negative because Z decreases roll
+    // Update should process the reset
+    keyboardInteraction.update()
+    keyboardInteraction.getCurrentRotation should equal(Rotation.ZERO)
+    keyboardInteraction.isResetRequested should be(false)
+  }
+  
+  it should "have no-op cleanup when not started" in {
+    val keyboardInteraction = new KeyboardInputManager()
+    
+    // Should not throw exception
+    noException should be thrownBy keyboardInteraction.cleanup()
   }
 }

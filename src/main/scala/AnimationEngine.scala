@@ -1,74 +1,29 @@
 import scala.util.{Either, Left, Right}
-import java.io.IOException
 
 class AnimationEngine(
   world: World,
+  userInteraction: UserInteraction,  // Dependency injection
   worldSize: Int,
   cubeSize: Int,
   cubeCenter: Coord,
   shapeId: Int,
   frameDelayMs: Int
 ) {
-  @volatile private var lastKeyPressed: Option[Int] = None
   @volatile private var running = true
   
-  // Add KeyboardInputManager for interactive control
-  private val inputManager = new KeyboardInputManager()
-  
-  println("Immediate keyboard input enabled")
-  println("Press Q or ESC to quit the animation")
-  
-  // Try to enable cbreak mode (immediate input but preserve control sequences)
-  private def enableRawMode(): Unit = {
-    try {
-      // Use cbreak instead of raw to preserve ANSI escape sequences
-      val pb = new ProcessBuilder("stty", "cbreak", "-echo")
-      pb.inheritIO()
-      val process = pb.start()
-      process.waitFor()
-    } catch {
-      case _: Exception => 
-        println("Warning: Could not enable cbreak mode")
-    }
-  }
-  
-  private def disableRawMode(): Unit = {
-    try {
-      // Restore normal terminal settings
-      val pb = new ProcessBuilder("stty", "-cbreak", "echo")
-      pb.inheritIO()
-      val process = pb.start()
-      process.waitFor()
-    } catch {
-      case _: Exception => // Ignore cleanup errors
-    }
-  }
-  
-  // Enable raw mode at startup
-  enableRawMode()
-  
-  // Start input thread with raw System.in
-  private val inputThread = new Thread(() => {
-    try {
-      while (running) {
-        // Read directly from System.in - should be immediate with raw mode
-        val key = System.in.read()
-        if (key != -1 && running) {
-          lastKeyPressed = Some(key)
-          // Process key input for rotation control
-          inputManager.processInput(key)
-        }
-      }
-    } catch {
-      case _: IOException => // Stream closed or interrupted
-    }
-  })
-  inputThread.setDaemon(true)
-  inputThread.start()
-  
   def run(): Unit = {
-    val frames = buildAnimationFrames()
-    animate(frames)
+    // Start the user interaction system
+    userInteraction match {
+      case keyboard: KeyboardInputManager => keyboard.start()
+      case _ => // Other implementations don't need startup
+    }
+    
+    try {
+      val frames = buildAnimationFrames()
+      animate(frames)
+    } finally {
+      userInteraction.cleanup()
+    }
   }
   
   def buildAnimationFrames(): LazyList[String] = {
@@ -76,8 +31,7 @@ class AnimationEngine(
       rotateShapes(frameIndex) match {
         case Right(w) =>
           val rendered = Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
-          // Use actual rotation from KeyboardInputManager instead of automatic rotation
-          val actualRotation = inputManager.getCurrentRotation
+          val actualRotation = userInteraction.getCurrentRotation
           addRotationDetails(rendered, frameIndex, actualRotation)
         case Left(_) => "" // Skip errors
       }
@@ -85,41 +39,32 @@ class AnimationEngine(
   }
 
   private def animate(frames: LazyList[String]): Unit = {
-    try {
-      var frameIndex = 0
-      val frameIterator = frames.iterator
+    var frameIndex = 0
+    val frameIterator = frames.iterator
+    
+    while (frameIterator.hasNext && running) {
+      // Update user interaction state
+      userInteraction.update()
       
-      while (frameIterator.hasNext && running) {
-        // Check for quit keys before rendering frame
-        lastKeyPressed match {
-          case Some(113) | Some(81) => // 'q' or 'Q'
-            println(s"\nDetected quit key - Quitting...")
-            running = false
-            return
-          case Some(27) => // ESC key
-            println(s"\nDetected ESC key - Exiting...")
-            running = false
-            return
-          case _ => // Continue with animation
-        }
-        
-        val frame = frameIterator.next()
-        
-        // Add key display to frame
-        val frameWithKey = addKeyDisplay(frame)
-        
-        // Clear screen and move cursor to top-left
-        print("\u001b[2J\u001b[H")
-        print(frameWithKey)
-        System.out.flush() // Ensure output is flushed
-        Thread.sleep(frameDelayMs)
-        
-        frameIndex += 1
+      // Check for quit request
+      if (userInteraction.isQuitRequested) {
+        println(s"\nQuit requested - Exiting...")
+        running = false
+        return
       }
-    } finally {
-      running = false
-      inputThread.interrupt()
-      disableRawMode()
+      
+      val frame = frameIterator.next()
+      
+      // Add control instructions to frame
+      val frameWithControls = addControlInstructions(frame)
+      
+      // Clear screen and move cursor to top-left
+      print("\u001b[2J\u001b[H")
+      print(frameWithControls)
+      System.out.flush() // Ensure output is flushed
+      Thread.sleep(frameDelayMs)
+      
+      frameIndex += 1
     }
   }
 
@@ -139,22 +84,20 @@ class AnimationEngine(
   }
 
   def rotateShapes(frameIndex: Int): Either[NoSuchShape, World] = {
-    // Use interactive rotation from KeyboardInputManager instead of automatic rotation
-    val userRotation = inputManager.getCurrentRotation
+    // Use interactive rotation from UserInteraction instead of automatic rotation
+    val userRotation = userInteraction.getCurrentRotation
     
     // Reset to start position and apply the user-controlled rotation
     val worldWithReset = world.reset.add(TriangleShapes.cube(shapeId, cubeSize), cubeCenter, userRotation)
     Right(worldWithReset)
   }
   
-
-  
   // Add control instructions to the rendered frame
-  private def addKeyDisplay(frame: String): String = {
+  private def addControlInstructions(frame: String): String = {
     val lines = frame.split("\n")
     if (lines.nonEmpty) {
       // Add control instructions at the bottom
-              val controlsLine = "\nControls: WASD = Rotate, Z/X = Roll, R = Reset, Q/ESC = Quit"
+      val controlsLine = "\nControls: WASD = Rotate, Z/X = Roll, R = Reset, Q/ESC = Quit"
       
       frame + controlsLine
     } else {

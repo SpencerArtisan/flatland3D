@@ -8,8 +8,11 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val world = buildWorld
+    val userInteraction = new KeyboardInputManager()
+    
     val animationEngine = new AnimationEngine(
       world = world,
+      userInteraction = userInteraction,
       worldSize = WORLD_SIZE,
       cubeSize = CUBE_SIZE,
       cubeCenter = CUBE_CENTER,
