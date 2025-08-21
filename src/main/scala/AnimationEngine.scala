@@ -7,9 +7,7 @@ class AnimationEngine(
   cubeSize: Int,
   cubeCenter: Coord,
   shapeId: Int,
-  frameDelayMs: Int,
-  yawRotationRate: Double,
-  rollRotationRate: Double
+  frameDelayMs: Int
 ) {
   @volatile private var lastKeyPressed: Option[Int] = None
   @volatile private var running = true
@@ -78,12 +76,9 @@ class AnimationEngine(
       rotateShapes(frameIndex) match {
         case Right(w) =>
           val rendered = Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
-          val rotation = Rotation(
-            yaw = frameIndex * yawRotationRate,
-            pitch = 0,
-            roll = frameIndex * rollRotationRate
-          )
-          addRotationDetails(rendered, frameIndex, rotation)
+          // Use actual rotation from KeyboardInputManager instead of automatic rotation
+          val actualRotation = inputManager.getCurrentRotation
+          addRotationDetails(rendered, frameIndex, actualRotation)
         case Left(_) => "" // Skip errors
       }
     }

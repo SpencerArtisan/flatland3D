@@ -13,9 +13,7 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
       shapeId = 1,
-      frameDelayMs = 100,
-      yawRotationRate = Math.PI / 18,
-      rollRotationRate = Math.PI / 36
+      frameDelayMs = 100
     )
   }
   

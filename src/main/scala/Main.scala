@@ -5,8 +5,6 @@ object Main {
   private val CUBE_SIZE = 10
   private val CUBE_CENTER = Coord(11, 11, 11)
   private val FRAME_DELAY_MS = 66
-  private val YAW_ROTATION_RATE = Math.PI / -36
-  private val ROLL_ROTATION_RATE = Math.PI / 72
 
   def main(args: Array[String]): Unit = {
     val world = buildWorld
@@ -16,10 +14,11 @@ object Main {
       cubeSize = CUBE_SIZE,
       cubeCenter = CUBE_CENTER,
       shapeId = SHAPE_ID,
-      frameDelayMs = FRAME_DELAY_MS,
-      yawRotationRate = YAW_ROTATION_RATE,
-      rollRotationRate = ROLL_ROTATION_RATE
+      frameDelayMs = FRAME_DELAY_MS
     )
+    
+    println("Flatland3D Interactive Mode")
+    println("Use WASD to rotate the cube, R to reset, Q/ESC to quit")
     
     animationEngine.run()
   }
