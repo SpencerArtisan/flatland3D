@@ -126,6 +126,119 @@ case class BVHInterior(left: BVHNode, right: BVHNode, bounds: BoundingBox) exten
 object BVH {
   private val MAX_TRIANGLES_PER_LEAF = 4
   private val MAX_DEPTH = 20
+  private val NUM_BINS = 12  // Number of bins for SAH calculation
+  
+  // Cost constants for SAH
+  private val INTERSECTION_COST = 1.0  // Cost of ray-triangle intersection
+  private val TRAVERSAL_COST = 0.125   // Cost of traversing a node (typically 1/8th of intersection)
+  
+  // Bin structure for SAH calculation
+  private case class Bin(
+    bounds: BoundingBox,
+    triangleCount: Int
+  ) {
+    def extendWith(triangle: Triangle): Bin = {
+      val triangleBounds = BoundingBox.fromTriangle(triangle)
+      Bin(
+        bounds.union(triangleBounds),
+        triangleCount + 1
+      )
+    }
+  }
+  
+  private object Bin {
+    def empty: Bin = Bin(
+      bounds = BoundingBox(Coord(0,0,0), Coord(0,0,0)),
+      triangleCount = 0
+    )
+  }
+  
+  // Calculate SAH cost for a potential split
+  private def calculateSAHCost(
+    leftBounds: BoundingBox,
+    leftCount: Int,
+    rightBounds: BoundingBox,
+    rightCount: Int,
+    parentArea: Double
+  ): Double = {
+    val leftProb = leftBounds.surfaceArea / parentArea
+    val rightProb = rightBounds.surfaceArea / parentArea
+    
+    TRAVERSAL_COST + (
+      leftProb * leftCount * INTERSECTION_COST +
+      rightProb * rightCount * INTERSECTION_COST
+    )
+  }
+  
+  // Find best split using Surface Area Heuristic
+  private def findBestSplit(triangles: Seq[Triangle], parentBounds: BoundingBox): (Int, Double) = {
+    if (triangles.length <= 1) return (0, Double.PositiveInfinity)
+    
+    // Find axis with maximum extent
+    val size = parentBounds.size
+    val axis = if (size.x > size.y && size.x > size.z) 0
+               else if (size.y > size.z) 1
+               else 2
+               
+    // Initialize bins
+    val bins = Array.fill(NUM_BINS)(Bin.empty)
+    
+    // Calculate bin width
+    val min = parentBounds.min.get(axis)
+    val max = parentBounds.max.get(axis)
+    val extent = max - min
+    val binWidth = extent / NUM_BINS
+    
+    // Sort triangles into bins
+    triangles.foreach { triangle =>
+      val centroid = triangle.centroid
+      val binIndex = {
+        val normalizedPos = (centroid.get(axis) - min) / extent
+        val bin = (normalizedPos * NUM_BINS).toInt
+        math.min(NUM_BINS - 1, math.max(0, bin))  // Clamp to valid range
+      }
+      bins(binIndex) = bins(binIndex).extendWith(triangle)
+    }
+    
+    // Sweep from left to right, accumulating bounds
+    val leftBounds = Array.fill(NUM_BINS)(Bin.empty)
+    var running = Bin.empty
+    for (i <- bins.indices) {
+      running = Bin(
+        running.bounds.union(bins(i).bounds),
+        running.triangleCount + bins(i).triangleCount
+      )
+      leftBounds(i) = running
+    }
+    
+    // Sweep from right to left, finding lowest SAH cost
+    running = Bin.empty
+    var minCost = Double.PositiveInfinity
+    var bestSplit = 0
+    val parentArea = parentBounds.surfaceArea
+    
+    for (i <- (0 until NUM_BINS - 1).reverse) {
+      running = Bin(
+        running.bounds.union(bins(i + 1).bounds),
+        running.triangleCount + bins(i + 1).triangleCount
+      )
+      
+      val cost = calculateSAHCost(
+        leftBounds(i).bounds,
+        leftBounds(i).triangleCount,
+        running.bounds,
+        running.triangleCount,
+        parentArea
+      )
+      
+      if (cost < minCost) {
+        minCost = cost
+        bestSplit = i
+      }
+    }
+    
+    (bestSplit, minCost)
+  }
   
   def build(triangles: Seq[Triangle]): BVHNode = {
     buildRecursive(triangles, 0)
@@ -139,18 +252,42 @@ object BVH {
       return BVHLeaf(triangles, bounds)
     }
     
-    // Find longest axis of bounding box
+    // Find best split using SAH
+    val (splitBin, splitCost) = findBestSplit(triangles, bounds)
+    
+    // Find axis with maximum extent
     val size = bounds.size
     val axis = if (size.x > size.y && size.x > size.z) 0
                else if (size.y > size.z) 1
                else 2
     
-    // Sort triangles by centroid along longest axis
-    val sortedTriangles = triangles.sortBy(_.centroid.get(axis))
+    // Calculate split position
+    val min = bounds.min.get(axis)
+    val max = bounds.max.get(axis)
+    val extent = max - min
+    val splitPos = min + (extent * (splitBin + 1).toDouble / NUM_BINS)
     
-    // Split triangles into two roughly equal groups
-    val mid = sortedTriangles.length / 2
-    val (leftTris, rightTris) = sortedTriangles.splitAt(mid)
+    // If split cost is worse than just making a leaf, create leaf
+    val leafCost = triangles.length * INTERSECTION_COST
+    if (splitCost >= leafCost && triangles.length <= MAX_TRIANGLES_PER_LEAF * 2) {
+      return BVHLeaf(triangles, bounds)
+    }
+    
+    // Split triangles based on SAH split position
+    val (leftTris, rightTris) = triangles.partition { triangle =>
+      triangle.centroid.get(axis) <= splitPos
+    }
+    
+    // Handle degenerate splits
+    if (leftTris.isEmpty || rightTris.isEmpty) {
+      val mid = triangles.length / 2
+      val (left, right) = triangles.splitAt(mid)
+      return BVHInterior(
+        buildRecursive(left, depth + 1),
+        buildRecursive(right, depth + 1),
+        bounds
+      )
+    }
     
     // Recursively build children
     val left = buildRecursive(leftTris, depth + 1)
