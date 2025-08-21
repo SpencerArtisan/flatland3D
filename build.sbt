@@ -15,3 +15,4 @@ keyTest := (Compile / runMain).toTask(" KeyTest").value
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.19"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
 libraryDependencies += "org.jline" % "jline-terminal" % "3.21.0"
+libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"

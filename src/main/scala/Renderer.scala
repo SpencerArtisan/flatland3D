@@ -1,4 +1,36 @@
 object Renderer {
+  // Performance metrics
+  case class RenderMetrics(
+    rayTransformTimeMs: Long = 0,
+    intersectionTestTimeMs: Long = 0,
+    shadingTimeMs: Long = 0,
+    totalPixels: Int = 0,
+    totalIntersectionTests: Long = 0,
+    successfulIntersections: Int = 0
+  ) {
+    def totalTimeMs: Long = rayTransformTimeMs + intersectionTestTimeMs + shadingTimeMs
+    
+    override def toString: String = {
+      val avgIntersectionsPerPixel = if (totalPixels > 0) totalIntersectionTests.toDouble / totalPixels else 0
+      val hitRate = if (totalIntersectionTests > 0) successfulIntersections.toDouble / totalIntersectionTests * 100 else 0
+      
+      s"""Render Metrics:
+         |  Ray Transform Time: ${rayTransformTimeMs}ms
+         |  Intersection Tests: ${intersectionTestTimeMs}ms
+         |  Shading Time: ${shadingTimeMs}ms
+         |  Total Time: ${totalTimeMs}ms
+         |  Total Pixels: $totalPixels
+         |  Total Intersection Tests: $totalIntersectionTests
+         |  Successful Intersections: $successfulIntersections
+         |  Avg Intersections/Pixel: $avgIntersectionsPerPixel
+         |  Hit Rate: ${f"$hitRate%.2f"}%
+         |""".stripMargin
+    }
+  }
+  
+  private var currentMetrics = RenderMetrics()
+  def getLastRenderMetrics: RenderMetrics = currentMetrics
+  
   // Configuration constants
   private val DEFAULT_EPSILON = 1e-10
   private val DEFAULT_AMBIENT = 0.2
@@ -212,48 +244,88 @@ object Renderer {
                                       frameBuffer: Array[Array[Char]],
                                       depthBuffer: Array[Array[Double]],
                                       viewport: Option[Viewport] = None): Unit = {
-    // For triangle meshes, cast rays from screen pixels to find intersections
-    for {
-      y <- frameBuffer.indices
-      x <- frameBuffer(y).indices
-    } {
-      val screenCoord = Coord(x, y, 0)
-      val rayDirection = Coord(0, 0, 1) // Ray pointing into screen
+    import scala.collection.parallel.CollectionConverters._
+    
+    val totalPixels = frameBuffer.length * frameBuffer(0).length
+    
+    // Thread-safe counters using atomic variables
+    val rayTransformTime = new java.util.concurrent.atomic.AtomicLong(0)
+    val intersectionTestTime = new java.util.concurrent.atomic.AtomicLong(0)
+    val shadingTime = new java.util.concurrent.atomic.AtomicLong(0)
+    val intersectionTests = new java.util.concurrent.atomic.AtomicLong(0)
+    val successfulIntersections = new java.util.concurrent.atomic.AtomicInteger(0)
+    
+    // Process rows in parallel
+    frameBuffer.indices.par.foreach { y =>
+      // Process each pixel in the row
+      frameBuffer(y).indices.foreach { x =>
+        val screenCoord = Coord(x, y, 0)
+        val rayDirection = Coord(0, 0, 1) // Ray pointing into screen
       
-      // Transform screen coordinates to world coordinates if using viewport
-      val worldRayOrigin = viewport match {
-        case Some(vp) => 
-          // Transform viewport coordinates back to world coordinates
-          val viewportCoord = Coord(x, y, 0)
-          val worldCoord = Coord(
-            vp.worldBounds.minX + x,
-            vp.worldBounds.minY + y,
-            vp.worldBounds.minZ
-          )
-          worldCoord
-        case None => screenCoord
-      }
-      
-      // Transform ray to shape's local coordinate system
-      val localRayOrigin = placement.rotation.inverse.applyTo(worldRayOrigin - placement.origin)
-      val localRayDirection = placement.rotation.inverse.applyTo(rayDirection)
-      
-      // Find closest intersection with triangle mesh
-      triangleMesh.intersectRay(localRayOrigin, localRayDirection) match {
-        case Some((distance, triangle)) =>
-          val worldZ = screenCoord.z + distance
-          if (worldZ < depthBuffer(y)(x)) {
-            val surfaceNormal = triangle.normal
-            val transformedLight = transformLightToShapeSpace(light, placement.rotation)
-            val brightness = calculateLambertianBrightness(surfaceNormal, transformedLight, ambient)
-            val shadingChar = brightnessToCharacter(brightness, chars)
-            
-            frameBuffer(y)(x) = shadingChar
-            depthBuffer(y)(x) = worldZ
-          }
-        case None => // No intersection, leave pixel unchanged
+        // Transform timing start
+        val transformStart = System.nanoTime()
+        
+        // Transform screen coordinates to world coordinates if using viewport
+        val worldRayOrigin = viewport match {
+          case Some(vp) => 
+            // Transform viewport coordinates back to world coordinates
+            val viewportCoord = Coord(x, y, 0)
+            val worldCoord = Coord(
+              vp.worldBounds.minX + x,
+              vp.worldBounds.minY + y,
+              vp.worldBounds.minZ
+            )
+            worldCoord
+          case None => screenCoord
+        }
+        
+        // Transform ray to shape's local coordinate system
+        val localRayOrigin = placement.rotation.inverse.applyTo(worldRayOrigin - placement.origin)
+        val localRayDirection = placement.rotation.inverse.applyTo(rayDirection)
+        
+        rayTransformTime.addAndGet(System.nanoTime() - transformStart)
+        
+        // Intersection timing start
+        val intersectStart = System.nanoTime()
+        
+        // Find closest intersection with triangle mesh
+        intersectionTests.addAndGet(triangleMesh.triangles.size) // Count total tests
+        val intersection = triangleMesh.intersectRay(localRayOrigin, localRayDirection)
+        
+        intersectionTestTime.addAndGet(System.nanoTime() - intersectStart)
+        
+        intersection match {
+          case Some((distance, triangle)) =>
+            successfulIntersections.incrementAndGet()
+            val worldZ = screenCoord.z + distance
+            if (worldZ < depthBuffer(y)(x)) {
+              // Shading timing start
+              val shadingStart = System.nanoTime()
+              
+              val surfaceNormal = triangle.normal
+              val transformedLight = transformLightToShapeSpace(light, placement.rotation)
+              val brightness = calculateLambertianBrightness(surfaceNormal, transformedLight, ambient)
+              val shadingChar = brightnessToCharacter(brightness, chars)
+              
+              frameBuffer(y)(x) = shadingChar
+              depthBuffer(y)(x) = worldZ
+              
+              shadingTime.addAndGet(System.nanoTime() - shadingStart)
+            }
+          case None => // No intersection, leave pixel unchanged
+        }
       }
     }
+    
+    // Update metrics (convert nano to milliseconds)
+    currentMetrics = RenderMetrics(
+      rayTransformTimeMs = rayTransformTime.get() / 1000000,
+      intersectionTestTimeMs = intersectionTestTime.get() / 1000000,
+      shadingTimeMs = shadingTime.get() / 1000000,
+      totalPixels = totalPixels,
+      totalIntersectionTests = intersectionTests.get(),
+      successfulIntersections = successfulIntersections.get()
+    )
   }
 
 
