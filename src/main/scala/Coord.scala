@@ -1,4 +1,11 @@
 case class Coord(x: Double, y: Double, z: Double) {
+  // Get coordinate by axis index (0=x, 1=y, 2=z)
+  def get(axis: Int): Double = axis match {
+    case 0 => x
+    case 1 => y
+    case 2 => z
+    case _ => throw new IllegalArgumentException(s"Invalid axis: $axis")
+  }
   def +(other: Coord): Coord = Coord(x + other.x, y + other.y, z + other.z)
 
   def -(other: Coord): Coord = Coord(x - other.x, y - other.y, z - other.z)

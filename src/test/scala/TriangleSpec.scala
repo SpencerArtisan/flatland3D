@@ -35,7 +35,7 @@ class TriangleSpec extends AnyFlatSpec with should.Matchers {
     val rayOrigin = Coord(0.25, 0.25, -1)
     val rayDirection = Coord(0, 0, 1)
     
-    val intersection = triangle.intersect(rayOrigin, rayDirection)
+    val intersection = triangle.intersectRay(rayOrigin, rayDirection)
     intersection should be (defined)
     intersection.get should be (1.0 +- 0.001)
   }
@@ -51,7 +51,7 @@ class TriangleSpec extends AnyFlatSpec with should.Matchers {
     val rayOrigin = Coord(2, 2, -1)  // Outside triangle bounds
     val rayDirection = Coord(0, 0, 1)
     
-    triangle.intersect(rayOrigin, rayDirection) should be (None)
+    triangle.intersectRay(rayOrigin, rayDirection) should be (None)
   }
 
   "TriangleCube" should "be constructed with correct triangle count" in {
