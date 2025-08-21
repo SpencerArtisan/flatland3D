@@ -155,8 +155,39 @@ object Renderer {
     depthBuffer(y)(x) = depth
   }
 
-  private def frameBufferToString(frameBuffer: Array[Array[Char]], xScale: Int): String =
-    frameBuffer.map(_.map(_.toString * xScale).mkString).mkString("\n")
+  private def frameBufferToString(frameBuffer: Array[Array[Char]], xScale: Int): String = {
+    // First apply xScale to the frame buffer content
+    val scaledContent = frameBuffer.map(_.map(_.toString * xScale).mkString).mkString("\n")
+    
+    // Then add the boundary frame around the scaled content
+    addBoundaryFrameToString(scaledContent, frameBuffer(0).length * xScale, frameBuffer.length)
+  }
+  
+  private def addBoundaryFrameToString(content: String, scaledWidth: Int, height: Int): String = {
+    val lines = content.split("\n")
+    
+    // Box-drawing characters
+    val topLeft = '┌'
+    val topRight = '┐'
+    val bottomLeft = '└'
+    val bottomRight = '┘'
+    val horizontal = '─'
+    val vertical = '│'
+    
+    // Create top border
+    val topBorder = topLeft + (horizontal.toString * scaledWidth) + topRight
+    
+    // Create bottom border  
+    val bottomBorder = bottomLeft + (horizontal.toString * scaledWidth) + bottomRight
+    
+    // Create content lines with side borders
+    val contentWithBorders = lines.map(line => vertical + line + vertical)
+    
+    // Combine all parts with a blank line at the top
+    (Seq("") ++ Seq(topBorder) ++ contentWithBorders ++ Seq(bottomBorder)).mkString("\n")
+  }
+
+
 
   private def renderTriangleMeshForward(triangleMesh: TriangleMesh,
                                       placement: Placement,
@@ -195,4 +226,6 @@ object Renderer {
       }
     }
   }
+
+
 }

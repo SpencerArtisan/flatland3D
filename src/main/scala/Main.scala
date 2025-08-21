@@ -1,6 +1,6 @@
 object Main {
   // Configuration constants
-  private val CLEAR = "\u001b[2J"
+  private val CLEAR = "\u001b[2J\u001b[H"
   private val BLOCK = '\u2588'
   private val SHAPE_ID = 101
   private val WORLD_SIZE = 22
