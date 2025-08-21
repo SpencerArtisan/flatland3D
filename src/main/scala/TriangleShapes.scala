@@ -66,10 +66,10 @@ object TriangleShapes {
     )
     
     val triangles = Seq(
-      Triangle(vertices(0), vertices(1), vertices(2)), // Front face
-      Triangle(vertices(0), vertices(2), vertices(3)), // Right face
-      Triangle(vertices(0), vertices(3), vertices(1)), // Left face
-      Triangle(vertices(1), vertices(3), vertices(2))  // Base face
+      Triangle(vertices(0), vertices(2), vertices(1)), // Front face (counter-clockwise from outside)
+      Triangle(vertices(0), vertices(3), vertices(2)), // Right face (counter-clockwise from outside)
+      Triangle(vertices(0), vertices(1), vertices(3)), // Left face (counter-clockwise from outside)
+      Triangle(vertices(1), vertices(2), vertices(3))  // Base face (counter-clockwise from outside)
     )
     
     TriangleMesh(id, triangles)
