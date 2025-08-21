@@ -240,11 +240,13 @@ class AnimationEngine(
     
     // Handle Easter egg toggle requests
     if (userInteraction.isEasterEggToggleRequested) {
-      easterEggActive = !easterEggActive
-      if (easterEggActive) {
+      if (!easterEggActive) {
+        // Activating Easter egg mode
+        easterEggActive = true
         println("\n*** Elite Mode Activated! ***")
       } else {
-        println("\n*** Elite Mode Deactivated ***")
+        // Already in Easter egg mode - cycle to next model
+        TriangleShapes.nextModel()
       }
     }
     

@@ -113,13 +113,19 @@ object TriangleShapes {
   )
   private var currentModelIndex = 0
 
-  // Create model for Easter egg (cycles through available models)
+  // Get the next model index (called when Ctrl+E is pressed)
+  def nextModel(): Unit = {
+    currentModelIndex = (currentModelIndex + 1) % EasterEggModels.length
+    val (_, modelName) = EasterEggModels(currentModelIndex)
+    println(s"*** Easter Egg Model: $modelName ***")
+  }
+
+  // Create model for Easter egg (uses current model index)
   def cobra(id: Int, size: Double): TriangleMesh = {
     require(size > 0, "Model size must be positive")
     
-    // Get current model and increment index for next time
-    val (modelFile, modelName) = EasterEggModels(currentModelIndex)
-    currentModelIndex = (currentModelIndex + 1) % EasterEggModels.length
+    // Get current model
+    val (modelFile, _) = EasterEggModels(currentModelIndex)
     
     // Load and parse the model
     val modelContent = scala.io.Source.fromResource(s"models/$modelFile").mkString
@@ -128,12 +134,11 @@ object TriangleShapes {
     result match {
       case Right(mesh) =>
         // Scale the mesh to the requested size
-        println(s"*** Easter Egg Model: $modelName ***")
         ObjParser.scaleMesh(mesh.copy(id = id), size)
         
       case Left(error) =>
         // Fallback to a simple cube if model loading fails
-        println(s"Failed to load $modelName model: $error")
+        println(s"Failed to load model: $error")
         cube(id, size)
     }
   }

@@ -144,4 +144,22 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
     val finalViewportDelta = keyboardInput.getViewportDelta
     finalViewportDelta.panOffset.y should be < 0.0
   }
+
+  // Easter egg tests
+  "KeyboardInputManager Easter egg" should "detect Ctrl+E for Easter egg toggle" in {
+    keyboardInput.isEasterEggToggleRequested should be(false)
+    
+    keyboardInput.processInput(5) // Ctrl+E (ASCII 5)
+    
+    keyboardInput.isEasterEggToggleRequested should be(true)
+  }
+
+  it should "reset Easter egg toggle flag after clearing deltas" in {
+    keyboardInput.processInput(5) // Ctrl+E
+    keyboardInput.isEasterEggToggleRequested should be(true)
+    
+    keyboardInput.clearDeltas()
+    
+    keyboardInput.isEasterEggToggleRequested should be(false)
+  }
 }
