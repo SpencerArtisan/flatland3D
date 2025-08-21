@@ -13,8 +13,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     // Simulate user input
@@ -41,8 +40,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     // Test controlled input
@@ -69,8 +67,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     testInteraction.isQuitRequested should be(true)
@@ -83,8 +80,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     keyboardInteraction.processInput('q')
@@ -103,8 +99,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     testInteraction.requestReset()
@@ -118,8 +113,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     keyboardInteraction.processInput('r')
@@ -139,8 +133,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     val testResult = testEngine.rotateShapes(0)
@@ -157,8 +150,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
       worldSize = 10,
       cubeSize = 2,
       cubeCenter = Coord(5, 5, 5),
-      shapeId = 1,
-      frameDelayMs = 100
+      shapeId = 1
     )
     
     val keyboardResult = keyboardEngine.rotateShapes(0)

@@ -41,8 +41,7 @@ class MainSpec extends AnyFlatSpec with should.Matchers {
       worldSize = Main.WORLD_SIZE,
       cubeSize = Main.SHAPE_SIZE,
       cubeCenter = Main.SHAPES_CENTROID,
-      shapeId = Main.CUBE_ID,
-      frameDelayMs = Main.FRAME_DELAY_MS
+      shapeId = Main.CUBE_ID
     )
     
     // Should have viewport support
@@ -63,8 +62,7 @@ class MainSpec extends AnyFlatSpec with should.Matchers {
       worldSize = Main.WORLD_SIZE,
       cubeSize = Main.SHAPE_SIZE,
       cubeCenter = Main.SHAPES_CENTROID,
-      shapeId = Main.CUBE_ID,
-      frameDelayMs = Main.FRAME_DELAY_MS
+      shapeId = Main.CUBE_ID
     )
     
     // Test zoom functionality
