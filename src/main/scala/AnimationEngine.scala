@@ -14,6 +14,9 @@ class AnimationEngine(
   @volatile private var lastKeyPressed: Option[Int] = None
   @volatile private var running = true
   
+  // Add KeyboardInputManager for interactive control
+  private val inputManager = new KeyboardInputManager()
+  
   println("Immediate keyboard input enabled")
   println("Press Q or ESC to quit the animation")
   
@@ -54,6 +57,8 @@ class AnimationEngine(
         val key = System.in.read()
         if (key != -1 && running) {
           lastKeyPressed = Some(key)
+          // Process key input for rotation control
+          inputManager.processInput(key)
         }
       }
     } catch {
@@ -139,15 +144,11 @@ class AnimationEngine(
   }
 
   def rotateShapes(frameIndex: Int): Either[NoSuchShape, World] = {
-    // Apply cumulative rotation from the start position for smooth animation
-    val totalRotation = Rotation(
-      yaw = frameIndex * yawRotationRate,    // Total yaw rotation up to this frame
-      pitch = 0,                               // No pitch rotation
-      roll = frameIndex * rollRotationRate   // Total roll rotation up to this frame
-    )
+    // Use interactive rotation from KeyboardInputManager instead of automatic rotation
+    val userRotation = inputManager.getCurrentRotation
     
-    // Reset to start position and apply the total rotation
-    val worldWithReset = world.reset.add(TriangleShapes.cube(shapeId, cubeSize), cubeCenter, totalRotation)
+    // Reset to start position and apply the user-controlled rotation
+    val worldWithReset = world.reset.add(TriangleShapes.cube(shapeId, cubeSize), cubeCenter, userRotation)
     Right(worldWithReset)
   }
   
@@ -158,7 +159,7 @@ class AnimationEngine(
     val lines = frame.split("\n")
     if (lines.nonEmpty) {
       // Add control instructions at the bottom
-      val controlsLine = "\nControls: Q/ESC = Quit"
+      val controlsLine = "\nControls: WASD = Rotate, R = Reset, Q/ESC = Quit"
       
       frame + controlsLine
     } else {

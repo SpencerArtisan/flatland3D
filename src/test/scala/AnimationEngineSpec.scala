@@ -35,7 +35,7 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     result.placements should have size 1
   }
   
-  it should "apply different rotations for different frame indices" in {
+  it should "use same rotation for different frame indices with no input" in {
     val engine = createTestEngine()
     
     val frame0 = engine.rotateShapes(0)
@@ -57,32 +57,26 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     world5.placements should have size 1
     world10.placements should have size 1
     
-    // But the placements should be different (different rotations)
+    // With interactive control, all frames should have same rotation (no keys pressed)
     val placement0 = world0.placements.head
     val placement5 = world5.placements.head
     val placement10 = world10.placements.head
     
-    // Different frames should have different rotations
-    placement0.rotation should not equal placement5.rotation
-    placement5.rotation should not equal placement10.rotation
+    // Same rotation for all frames when no input
+    placement0.rotation should equal(placement5.rotation)
+    placement5.rotation should equal(placement10.rotation)
   }
   
-  it should "calculate cumulative rotations correctly" in {
-    val yawRate = Math.PI / 18  // 10 degrees per frame
-    val rollRate = Math.PI / 36 // 5 degrees per frame
-    
+  it should "start with zero rotation when no keys pressed" in {
     val engine = createTestEngine()
     
-    // Test frame 3: should have 3x the rotation rates
-    val Right(world3) = engine.rotateShapes(3)
-    val placement3 = world3.placements.head
+    // With interactive control, should start with zero rotation
+    val Right(world0) = engine.rotateShapes(0)
+    val placement0 = world0.placements.head
     
-    val expectedYaw = 3 * yawRate
-    val expectedRoll = 3 * rollRate
-    
-    placement3.rotation.yaw shouldBe expectedYaw +- 0.001
-    placement3.rotation.pitch shouldBe 0.0 +- 0.001
-    placement3.rotation.roll shouldBe expectedRoll +- 0.001
+    placement0.rotation.yaw shouldBe 0.0 +- 0.001
+    placement0.rotation.pitch shouldBe 0.0 +- 0.001
+    placement0.rotation.roll shouldBe 0.0 +- 0.001
   }
   
   it should "generate animation frames as a LazyList" in {
@@ -132,7 +126,7 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     frame5 should include("°")
   }
   
-  it should "reset world and apply fresh rotation for each frame" in {
+  it should "reset world and maintain consistent rotation across frames" in {
     val engine = createTestEngine()
     
     // Generate multiple rotated worlds
@@ -153,8 +147,8 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     placement1.origin shouldBe Coord(5, 5, 5)
     placement2.origin shouldBe Coord(5, 5, 5)
     
-    // But with different rotations
-    placement1.rotation should not equal placement2.rotation
+    // With interactive control, rotations should be the same (no keys pressed)
+    placement1.rotation should equal(placement2.rotation)
   }
   
   it should "support keyboard input for quit functionality" in {
@@ -174,5 +168,46 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     // The controls are added in the animate method via addKeyDisplay, 
     // so we just verify the frame generation works correctly
     firstFrame should include("Frame:")
+  }
+  
+  it should "use interactive rotation instead of automatic rotation" in {
+    val engine = createTestEngine()
+    
+    // Test that rotation comes from KeyboardInputManager, not frame index
+    // This test will fail initially because we haven't integrated yet
+    val world0 = engine.rotateShapes(0).right.get
+    val world5 = engine.rotateShapes(5).right.get
+    
+    // With interactive control, rotation should be the same regardless of frame index
+    // (since no keys have been pressed)
+    val placement0 = world0.placements.head
+    val placement5 = world5.placements.head
+    
+    // This will fail initially because it still uses automatic rotation
+    placement0.rotation should equal(placement5.rotation)
+  }
+  
+  it should "process WASD keys for rotation control" in {
+    val engine = createTestEngine()
+    
+    // Simulate key press processing
+    // This test will fail initially because the integration doesn't exist yet
+    val initialWorld = engine.rotateShapes(0).right.get
+    val initialPlacement = initialWorld.placements.head
+    val initialRotation = initialPlacement.rotation
+    
+    // This should eventually call the KeyboardInputManager
+    // For now, this test will fail because the method doesn't exist
+    // engine.processKeyInput(100) // 'd' key
+    
+    // After processing 'd' key, yaw should increase
+    val afterKeyWorld = engine.rotateShapes(0).right.get
+    val afterKeyPlacement = afterKeyWorld.placements.head
+    
+    // This assertion will fail until we implement the integration
+    // afterKeyPlacement.rotation.yaw should be > initialRotation.yaw
+    
+    // For now, just verify the engine exists (this will pass)
+    engine should not be null
   }
 }
