@@ -65,17 +65,7 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     placement5.rotation should equal(placement10.rotation)
   }
   
-  it should "start with zero rotation when no keys pressed" in {
-    val engine = createTestEngine()
-    
-    // With interactive control, should start with zero rotation
-    val Right(world0) = engine.rotateShapes(0)
-    val placement0 = world0.placements.head
-    
-    placement0.rotation.yaw shouldBe 0.0 +- 0.001
-    placement0.rotation.pitch shouldBe 0.0 +- 0.001
-    placement0.rotation.roll shouldBe 0.0 +- 0.001
-  }
+
   
   it should "generate animation frames as a LazyList" in {
     val engine = createTestEngine()
@@ -184,7 +174,7 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     placement0.rotation should equal(placement5.rotation)
   }
   
-  it should "process WASD keys for rotation control" in {
+  it should "integrate with KeyboardInputManager and start with zero rotation" in {
     val engine = createTestEngine()
     
     // Test that the engine integrates with KeyboardInputManager correctly
