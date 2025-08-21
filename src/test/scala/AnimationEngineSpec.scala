@@ -190,4 +190,49 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     // Verify engine is properly constructed with KeyboardInputManager integration
     engine should not be null
   }
+
+  it should "actually rotate the cube when WASD keys are processed" in {
+    val engine = createTestEngine()
+    
+    // Get initial state with no rotation
+    val initialWorld = engine.rotateShapes(0).right.get
+    val initialPlacement = initialWorld.placements.head
+    val initialRotation = initialPlacement.rotation
+    
+    // Verify we start at zero rotation
+    initialRotation.yaw shouldBe 0.0 +- 0.001
+    initialRotation.pitch shouldBe 0.0 +- 0.001
+    
+    // Simulate processing a 'd' key (right rotation)
+    // We need to access the inputManager to simulate key input
+    // This tests the actual integration between AnimationEngine and KeyboardInputManager
+    val inputManagerField = engine.getClass.getDeclaredField("inputManager")
+    inputManagerField.setAccessible(true)
+    val inputManager = inputManagerField.get(engine).asInstanceOf[KeyboardInputManager]
+    
+    // Process 'd' key to rotate right
+    inputManager.processInput(100) // 'd' key ASCII
+    
+    // Now get the world again - it should show the rotation
+    val rotatedWorld = engine.rotateShapes(0).right.get
+    val rotatedPlacement = rotatedWorld.placements.head
+    val rotatedRotation = rotatedPlacement.rotation
+    
+    // The yaw should have increased (rotated right)
+    rotatedRotation.yaw should be > initialRotation.yaw
+    
+    // Process 'w' key to rotate up
+    inputManager.processInput(119) // 'w' key ASCII
+    
+    // Get world again after 'w' key
+    val finalWorld = engine.rotateShapes(0).right.get
+    val finalPlacement = finalWorld.placements.head
+    val finalRotation = finalPlacement.rotation
+    
+    // Pitch should have increased (rotated up)
+    finalRotation.pitch should be > initialRotation.pitch
+    
+    // Yaw should still be increased from 'd' key
+    finalRotation.yaw should be > initialRotation.yaw
+  }
 }
