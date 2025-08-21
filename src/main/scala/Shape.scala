@@ -73,6 +73,10 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   private lazy val bvh = BVH.build(triangles)
   private lazy val bounds = BoundingBox.fromTriangles(triangles)
   
+  // Track BVH traversal metrics
+  private var lastMetrics: Option[BVHMetrics] = None
+  def getLastTraversalMetrics: Option[BVHMetrics] = lastMetrics
+  
   // Configuration constants
   private val RAY_DIRECTIONS = Seq(
     Coord(1, 0, 0),
@@ -122,6 +126,9 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   
   // Ray-triangle intersection for the entire mesh using BVH
   def intersectRay(rayOrigin: Coord, rayDirection: Coord): Option[(Double, Triangle)] = {
-    bvh.intersectRay(rayOrigin, rayDirection)
+    val metrics = new BVHMetrics()
+    val result = bvh.intersectRay(rayOrigin, rayDirection, metrics, 0)
+    lastMetrics = Some(metrics)
+    result
   }
 }
