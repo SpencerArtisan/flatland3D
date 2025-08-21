@@ -86,7 +86,6 @@ class AnimationEngine(
     val rollDegrees = (rotation.roll * 180 / Math.PI) % 360
     
     val details = Seq(
-      f"Frame: $frameIndex%3d",
       f"Yaw:   ${yawDegrees}%6.1f°",
       f"Pitch: ${pitchDegrees}%6.1f°", 
       f"Roll:  ${rollDegrees}%6.1f°"
