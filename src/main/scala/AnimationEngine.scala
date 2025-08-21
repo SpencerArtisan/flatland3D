@@ -178,10 +178,15 @@ class AnimationEngine(
   private def addControlInstructions(frame: String): String = {
     val lines = frame.split("\n")
     if (lines.nonEmpty) {
-      // Add control instructions at the bottom
-      val controlsLine = "\nControls: WASD = Rotate, Z/X = Roll, R = Reset, +/=/- = Zoom, Arrows = Pan, V = Reset Viewport, Q/ESC = Quit"
+      // Add control instructions at the bottom - organized by category
+      val controlsLines = Seq(
+        "",
+        "Rotation: WASD = Rotate, Z/X = Roll, R = Reset",
+        "Viewport: +/=/- = Zoom, Arrow Keys = Pan, V = Reset Viewport",
+        "System: Q/ESC = Quit"
+      ).mkString("\n")
       
-      frame + controlsLine
+      frame + controlsLines
     } else {
       frame
     }
