@@ -20,6 +20,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
     // Simulate user input
     keyboardInteraction.processInput('w') // Pitch up
     keyboardInteraction.processInput('a') // Yaw left
+    engine.processDeltas() // Process the deltas to update internal state
     
     val result = engine.rotateShapes(0)
     result should be a 'right
@@ -46,6 +47,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
     
     // Test controlled input
     testInteraction.setRotationDelta(Rotation(0, Math.PI/4, 0))
+    engine.processDeltas() // Process the delta to update internal state
     
     val result = engine.rotateShapes(0)
     result should be a 'right

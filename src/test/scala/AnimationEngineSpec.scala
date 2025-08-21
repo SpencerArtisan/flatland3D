@@ -22,14 +22,16 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
 
   override def afterEach(): Unit = {
     testUserInteraction.clearRequests()
+    testUserInteraction.clearDeltas()
+    animationEngine.resetState()
   }
 
   "AnimationEngine" should "apply user rotation to world correctly" in {
     val rotationDelta = Rotation(yaw = Math.PI / 4, pitch = Math.PI / 6, roll = 0)
     testUserInteraction.setRotationDelta(rotationDelta)
     
-    // Simulate one frame of processing
-    animationEngine.buildAnimationFrames().head
+    // Process the deltas
+    animationEngine.processDeltas()
     
     // Check that AnimationEngine accumulated the rotation
     val currentRotation = animationEngine.getCurrentRotation
@@ -48,17 +50,15 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
     // Apply some rotation first
     val initialRotationDelta = Rotation(yaw = Math.PI / 4, pitch = Math.PI / 6, roll = 0)
     testUserInteraction.setRotationDelta(initialRotationDelta)
-    
-    // Process one frame to apply the rotation
-    animationEngine.buildAnimationFrames().head
+    animationEngine.processDeltas()
     
     // Verify rotation was applied
     val rotationAfterDelta = animationEngine.getCurrentRotation
     rotationAfterDelta should not be(Rotation.ZERO)
     
-    // Request reset and process another frame
+    // Request reset and process deltas
     testUserInteraction.requestReset()
-    animationEngine.buildAnimationFrames().head
+    animationEngine.processDeltas()
     
     // Verify rotation was reset to zero
     animationEngine.getCurrentRotation should be(Rotation.ZERO)
@@ -67,11 +67,12 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
   it should "build animation frames with user rotation" in {
     val rotationDelta = Rotation(yaw = Math.PI / 6, pitch = 0, roll = 0)
     testUserInteraction.setRotationDelta(rotationDelta)
+    animationEngine.processDeltas()
     
     val frames = animationEngine.buildAnimationFrames()
     frames should not be empty
     
-    // First frame should contain the rotated cube and apply the delta
+    // First frame should contain the rotated cube
     val firstFrame = frames.head
     firstFrame should not be empty
     
@@ -86,14 +87,15 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
     
     // Apply first delta
     testUserInteraction.setRotationDelta(delta1)
-    animationEngine.buildAnimationFrames().head
+    animationEngine.processDeltas()
     
     val rotationAfterFirst = animationEngine.getCurrentRotation
     rotationAfterFirst.yaw should be(Math.PI / 4 +- 0.001)
     
-    // Apply second delta (cumulative)
+    // Clear deltas and apply second delta
+    testUserInteraction.clearDeltas()
     testUserInteraction.setRotationDelta(delta2)
-    animationEngine.buildAnimationFrames().head
+    animationEngine.processDeltas()
     
     val rotationAfterSecond = animationEngine.getCurrentRotation
     rotationAfterSecond.yaw should be(Math.PI / 2 +- 0.001) // π/4 + π/4
@@ -209,8 +211,8 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
     val zoomDelta = ViewportDelta.zoomIn(1.5)
     testInteraction.setViewportDelta(zoomDelta)
     
-    // Process one frame to apply the delta
-    viewportEngine.buildAnimationFrames().head
+    // Process the deltas
+    viewportEngine.processDeltas()
     
     // Verify viewport was changed
     val newViewport = viewportEngine.getCurrentViewport.get

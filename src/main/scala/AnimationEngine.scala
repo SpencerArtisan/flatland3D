@@ -134,6 +134,15 @@ class AnimationEngine(
 
   def getCurrentViewport: Option[Viewport] = Some(currentViewport)
   def getCurrentRotation: Rotation = currentRotation
+  
+  // Method for tests to manually process deltas
+  def processDeltas(): Unit = processUserInputDeltas()
+  
+  // Method for tests to reset state
+  def resetState(): Unit = {
+    currentRotation = Rotation.ZERO
+    currentViewport = Viewport.centeredAt(cubeCenter)
+  }
 
   // Process deltas from user interaction and apply to internal state
   private def processUserInputDeltas(): Unit = {

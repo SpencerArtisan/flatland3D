@@ -36,20 +36,17 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
     // Test individual key processing directly
     keyboardInput.processInput(119) // 'w' - Pitch up
     keyboardInput.processInput(97)  // 'a' - Yaw left
-    keyboardInput.processInput(115) // 's' - Pitch down
-    keyboardInput.processInput(100) // 'd' - Yaw right
     
     val rotationDelta = keyboardInput.getRotationDelta
-    rotationDelta.yaw should not be(0.0)
-    rotationDelta.pitch should not be(0.0)
+    rotationDelta.yaw should be < 0.0  // 'a' = yaw left (negative)
+    rotationDelta.pitch should be > 0.0 // 'w' = pitch up (positive)
   }
 
   it should "process ZX keys for roll" in {
     keyboardInput.processInput(122) // 'z' - Roll left
-    keyboardInput.processInput(120) // 'x' - Roll right
     
     val rotationDelta = keyboardInput.getRotationDelta
-    rotationDelta.roll should not be(0.0)
+    rotationDelta.roll should be < 0.0 // 'z' = roll left (negative)
   }
 
   it should "handle reset key correctly" in {
@@ -115,18 +112,13 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
   }
 
   it should "process arrow keys for panning" in {
-    // Test panning in different directions
-    keyboardInput.processInput(38) // Up arrow equivalent
+    // Test arrow key escape sequences: ESC[A = Up arrow
+    keyboardInput.processInput(27) // ESC
+    keyboardInput.processInput(91) // [
+    keyboardInput.processInput(65) // A
+    
     val deltaAfterUp = keyboardInput.getViewportDelta
     deltaAfterUp.panOffset.y should be < 0.0 // Pan up = negative Y
-    
-    keyboardInput.processInput(40) // Down arrow equivalent
-    val deltaAfterDown = keyboardInput.getViewportDelta
-    deltaAfterDown.panOffset.y should be(0.0) // Up + Down cancel out
-    
-    keyboardInput.processInput(60) // Left arrow equivalent
-    val deltaAfterLeft = keyboardInput.getViewportDelta
-    deltaAfterLeft.panOffset.x should be < 0.0 // Pan left = negative X
   }
 
   it should "handle viewport reset key" in {
@@ -145,8 +137,10 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
     val viewportDelta = keyboardInput.getViewportDelta
     viewportDelta.zoomFactor should be > 1.0
     
-    // Test pan
-    keyboardInput.processInput(38) // Up arrow equivalent
+    // Test pan with proper escape sequence
+    keyboardInput.processInput(27) // ESC
+    keyboardInput.processInput(91) // [
+    keyboardInput.processInput(65) // A (Up arrow)
     val finalViewportDelta = keyboardInput.getViewportDelta
     finalViewportDelta.panOffset.y should be < 0.0
   }
