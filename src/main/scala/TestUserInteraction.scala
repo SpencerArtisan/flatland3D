@@ -14,8 +14,10 @@ class TestUserInteraction(
   def isResetRequested: Boolean = resetRequested
   def isViewportResetRequested: Boolean = viewportResetRequested
   def update(): Unit = {} // No-op for tests
-  def cleanup(): Unit = {} // No-op for tests
-  
+    def cleanup(): Unit = {} // No-op for tests
+  def getScaleFactor: Double = 1.0 // Default scale factor - no change
+  def isEasterEggToggleRequested: Boolean = false // Default - no easter egg toggle
+
   def clearDeltas(): Unit = {
     rotationDelta = Rotation.ZERO
     viewportDelta = ViewportDelta.IDENTITY
