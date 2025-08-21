@@ -49,20 +49,26 @@ object ObjParser {
                 return Left(s"Face has fewer than 3 vertices on line ${lineNum + 1}")
               } else if (vertexIndices.size == 3) {
                 // Triangle face - use directly
-                faces += Triangle(
-                  vertices(vertexIndices(0)),
-                  vertices(vertexIndices(1)),
-                  vertices(vertexIndices(2))
-                )
+                // Create triangle and ensure vertices are in counter-clockwise order
+                val v0 = vertices(vertexIndices(0))
+                val v1 = vertices(vertexIndices(1))
+                val v2 = vertices(vertexIndices(2))
+                val edge1 = v1 - v0
+                val edge2 = v2 - v0
+                val normal = edge1.cross(edge2)
+                faces += Triangle(v0, v1, v2)
               } else {
                 // N-gon face - triangulate using fan triangulation
                 // This works for convex polygons but may not be ideal for concave ones
                 for (i <- 1 until vertexIndices.size - 1) {
-                  faces += Triangle(
-                    vertices(vertexIndices(0)),
-                    vertices(vertexIndices(i)),
-                    vertices(vertexIndices(i + 1))
-                  )
+                  // Create triangle and ensure vertices are in counter-clockwise order
+                  val v0 = vertices(vertexIndices(0))
+                  val v1 = vertices(vertexIndices(i))
+                  val v2 = vertices(vertexIndices(i + 1))
+                  val edge1 = v1 - v0
+                  val edge2 = v2 - v0
+                  val normal = edge1.cross(edge2)
+                  faces += Triangle(v0, v1, v2)
                 }
               }
             

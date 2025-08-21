@@ -28,11 +28,13 @@ case class Triangle(v0: Coord, v1: Coord, v2: Coord) {
   private val PARALLEL_THRESHOLD = 1e-10
   private val INTERSECTION_THRESHOLD = 1e-10
   
-  // Calculate triangle normal using cross product
+  // Calculate triangle normal using cross product (always normalized)
   lazy val normal: Coord = {
     val edge1 = v1 - v0
     val edge2 = v2 - v0
-    edge1.cross(edge2).normalize
+    val n = edge1.cross(edge2)
+    val m = n.magnitude
+    if (m == 0) Coord(0, 0, 1) else n * (1.0 / m)
   }
   
   // Calculate triangle centroid

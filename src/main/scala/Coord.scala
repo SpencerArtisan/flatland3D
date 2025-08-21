@@ -12,6 +12,9 @@ case class Coord(x: Double, y: Double, z: Double) {
     if (m == 0) this else Coord(x / m, y / m, z / m)
   }
 
+  // Alias for normalize to match common naming conventions
+  def normalized: Coord = normalize
+
   def *(scalar: Double): Coord = Coord(x * scalar, y * scalar, z * scalar)
 
   def cross(other: Coord): Coord = Coord(
