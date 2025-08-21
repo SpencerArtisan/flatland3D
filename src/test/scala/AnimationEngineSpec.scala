@@ -156,4 +156,23 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     // But with different rotations
     placement1.rotation should not equal placement2.rotation
   }
+  
+  it should "support keyboard input for quit functionality" in {
+    val engine = createTestEngine()
+    
+    // Test that the engine can be created successfully with keyboard input enabled
+    // Note: We can't easily test the actual quit behavior in unit tests
+    // since it involves System.in, threads, and terminal mode changes
+    engine should not be null
+    
+    // Verify that frames can be generated (this indirectly tests that 
+    // the keyboard input thread doesn't interfere with normal operation)
+    val frames = engine.buildAnimationFrames()
+    val firstFrame = frames.head
+    
+    firstFrame should not be empty
+    // The controls are added in the animate method via addKeyDisplay, 
+    // so we just verify the frame generation works correctly
+    firstFrame should include("Frame:")
+  }
 }

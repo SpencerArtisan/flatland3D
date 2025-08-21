@@ -14,7 +14,8 @@ class AnimationEngine(
   @volatile private var lastKeyPressed: Option[Int] = None
   @volatile private var running = true
   
-  println("Immediate keyboard input enabled - press any key")
+  println("Immediate keyboard input enabled")
+  println("Press Q or ESC to quit the animation")
   
   // Try to enable cbreak mode (immediate input but preserve control sequences)
   private def enableRawMode(): Unit = {
@@ -85,7 +86,25 @@ class AnimationEngine(
 
   private def animate(frames: LazyList[String]): Unit = {
     try {
-      frames.foreach { frame =>
+      var frameIndex = 0
+      val frameIterator = frames.iterator
+      
+      while (frameIterator.hasNext && running) {
+        // Check for quit keys before rendering frame
+        lastKeyPressed match {
+          case Some(113) | Some(81) => // 'q' or 'Q'
+            println(s"\nDetected quit key - Quitting...")
+            running = false
+            return
+          case Some(27) => // ESC key
+            println(s"\nDetected ESC key - Exiting...")
+            running = false
+            return
+          case _ => // Continue with animation
+        }
+        
+        val frame = frameIterator.next()
+        
         // Add key display to frame
         val frameWithKey = addKeyDisplay(frame)
         
@@ -94,6 +113,8 @@ class AnimationEngine(
         print(frameWithKey)
         System.out.flush() // Ensure output is flushed
         Thread.sleep(frameDelayMs)
+        
+        frameIndex += 1
       }
     } finally {
       running = false
@@ -137,6 +158,9 @@ class AnimationEngine(
     val lines = frame.split("\n")
     if (lines.nonEmpty) {
       val keyDisplay = lastKeyPressed match {
+        case Some(113) => " Key: q (quit) "
+        case Some(81) => " Key: Q (quit) "
+        case Some(27) => " Key: ESC (exit) "
         case Some(keyCode) => s" Key: $keyCode "
         case None => " Key: - "
       }
@@ -145,7 +169,10 @@ class AnimationEngine(
       val firstLine = lines(0)
       val modifiedFirstLine = firstLine + keyDisplay
       
-      (modifiedFirstLine +: lines.tail).mkString("\n")
+      // Add control instructions at the bottom
+      val controlsLine = "\nControls: Q/ESC = Quit"
+      
+      (modifiedFirstLine +: lines.tail).mkString("\n") + controlsLine
     } else {
       frame
     }
