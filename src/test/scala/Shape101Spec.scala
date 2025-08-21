@@ -203,9 +203,9 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
             // The content should start at a reasonable Y position given the box placement
             minY should be >= 55  // Box should start around Y=55 (90-35)
             minY should be <= 95  // Box should not start too high
-            // The height should be reasonable for rotated box (triangle rendering may differ from voxel)
-            height should be >= 35  // Minimum reasonable height for rotated 70-height box
-            height should be <= 85  // Maximum reasonable height
+            // The height should be close to the expected box height
+            height should be >= 65  // Should be close to 70 (box height)
+            height should be <= 85  // With some tolerance
           }
         } else {
           fail("No rendered content found for shape 101")
@@ -284,9 +284,9 @@ class Shape101Spec extends AnyFlatSpec with should.Matchers {
           
           // This should reproduce the issues: severe truncation and poor shading
           withClue(s"Frame 29 should show truncation and shading issues: ") {
-            // The height should be reasonable for rotated box (triangle rendering may differ from voxel)
-            height should be >= 35  // Minimum reasonable height for rotated 70-height box
-            height should be <= 85  // Maximum reasonable height
+            // The height should be close to the expected box height
+            height should be >= 65  // Should be close to 70 (box height)
+            height should be <= 85  // With some tolerance
             // The aspect ratio should be reasonable
             aspectRatio should be >= 1.0  // Should not be too wide
             aspectRatio should be <= 2.0  // Should not be too narrow
