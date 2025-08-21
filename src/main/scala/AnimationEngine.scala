@@ -179,7 +179,7 @@ class AnimationEngine(
     val lines = frame.split("\n")
     if (lines.nonEmpty) {
       // Add control instructions at the bottom
-      val controlsLine = "\nControls: WASD = Rotate, Z/X = Roll, R = Reset, Q/ESC = Quit"
+      val controlsLine = "\nControls: WASD = Rotate, Z/X = Roll, R = Reset, +/=/- = Zoom, Arrows = Pan, V = Reset Viewport, Q/ESC = Quit"
       
       frame + controlsLine
     } else {

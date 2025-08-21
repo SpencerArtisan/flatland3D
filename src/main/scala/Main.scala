@@ -22,7 +22,7 @@ object Main {
     
     println("Flatland3D Interactive Mode")
     println("Rotation: WASD to rotate the cube, Z/X to roll, R to reset")
-    println("Viewport: +/- to zoom, V to reset viewport, Q/ESC to quit")
+    println("Viewport: +/=/- to zoom, Arrow keys to pan, V to reset viewport, Q/ESC to quit")
     
     animationEngine.run()
   }

@@ -16,6 +16,9 @@ class KeyboardInputManager extends UserInteraction {
   private var inputThread: Thread = _
   private var lastKeyPressed: Option[Int] = None
   
+  // Arrow key sequence detection
+  private var escapeSequenceBuffer: List[Int] = List()
+  
   // UserInteraction interface implementation
   def getRotationDelta: Rotation = accumulatedRotationDelta
   def getViewportDelta: ViewportDelta = accumulatedViewportDelta
@@ -92,6 +95,51 @@ class KeyboardInputManager extends UserInteraction {
   }
   
   def processInput(key: Int): Unit = {
+    // Handle escape sequences for arrow keys
+    if (escapeSequenceBuffer.nonEmpty) {
+      escapeSequenceBuffer = escapeSequenceBuffer :+ key
+      
+      // Check for complete arrow key sequences
+      escapeSequenceBuffer match {
+        case List(27, 91, 65) => // ESC[A - Up arrow - Pan up
+          val newPan = accumulatedViewportDelta.panOffset + Coord(0, -2, 0)
+          accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
+          escapeSequenceBuffer = List()
+          
+        case List(27, 91, 66) => // ESC[B - Down arrow - Pan down
+          val newPan = accumulatedViewportDelta.panOffset + Coord(0, 2, 0)
+          accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
+          escapeSequenceBuffer = List()
+          
+        case List(27, 91, 68) => // ESC[D - Left arrow - Pan left
+          val newPan = accumulatedViewportDelta.panOffset + Coord(-2, 0, 0)
+          accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
+          escapeSequenceBuffer = List()
+          
+        case List(27, 91, 67) => // ESC[C - Right arrow - Pan right
+          val newPan = accumulatedViewportDelta.panOffset + Coord(2, 0, 0)
+          accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
+          escapeSequenceBuffer = List()
+          
+        case List(27) if key != 91 => // ESC followed by non-[ means quit, not arrow key
+          quitRequested = true
+          escapeSequenceBuffer = List()
+          
+        case _ if escapeSequenceBuffer.length >= 3 => // Invalid sequence, reset
+          escapeSequenceBuffer = List()
+          
+        case _ => // Incomplete sequence, wait for more
+      }
+      return
+    }
+    
+    // Start escape sequence detection
+    if (key == 27) { // ESC
+      escapeSequenceBuffer = List(27)
+      return
+    }
+    
+    // Handle regular keys
     key match {
       // WASD Controls - accumulate rotation deltas
       case 119 | 87 => // 'w' or 'W' - Pitch up (look up)
@@ -118,33 +166,14 @@ class KeyboardInputManager extends UserInteraction {
       case 113 | 81 => // 'q' or 'Q' - Quit
         quitRequested = true
         
-      case 27 => // ESC key - Quit
-        quitRequested = true
-        
       // Viewport Controls - accumulate viewport deltas
-      case 43 => // '+' - Zoom in
+      case 43 | 61 => // '+' or '=' - Zoom in (= is easier on Mac without SHIFT)
         val newZoom = accumulatedViewportDelta.zoomFactor * 1.2
         accumulatedViewportDelta = accumulatedViewportDelta.copy(zoomFactor = newZoom)
         
       case 45 => // '-' - Zoom out
         val newZoom = accumulatedViewportDelta.zoomFactor * 0.8
         accumulatedViewportDelta = accumulatedViewportDelta.copy(zoomFactor = newZoom)
-        
-      case 38 => // '&' - Up arrow (simplified) - Pan up
-        val newPan = accumulatedViewportDelta.panOffset + Coord(0, -1, 0)
-        accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
-        
-      case 40 => // '(' - Down arrow (simplified) - Pan down
-        val newPan = accumulatedViewportDelta.panOffset + Coord(0, 1, 0)
-        accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
-        
-      case 60 => // '<' - Left arrow (simplified) - Pan left
-        val newPan = accumulatedViewportDelta.panOffset + Coord(-1, 0, 0)
-        accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
-        
-      case 62 => // '>' - Right arrow (simplified) - Pan right
-        val newPan = accumulatedViewportDelta.panOffset + Coord(1, 0, 0)
-        accumulatedViewportDelta = accumulatedViewportDelta.copy(panOffset = newPan)
         
       case 118 | 86 => // 'v' or 'V' - Viewport reset
         viewportResetRequested = true
