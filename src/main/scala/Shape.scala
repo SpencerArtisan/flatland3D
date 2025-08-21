@@ -73,9 +73,15 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   private lazy val bvh = BVH.build(triangles)
   private lazy val bounds = BoundingBox.fromTriangles(triangles)
   
+  // Triangle cache for frequently hit triangles
+  private val cache = new TriangleCache(32) // Cache size tuned for performance
+  
   // Track BVH traversal metrics
   private var lastMetrics: Option[BVHMetrics] = None
   def getLastTraversalMetrics: Option[BVHMetrics] = lastMetrics
+  
+  // Get cache statistics
+  def getCacheStats: (Int, Int, Double) = cache.stats
   
   // Configuration constants
   private val RAY_DIRECTIONS = Seq(
@@ -124,11 +130,22 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
     }
   }
   
-  // Ray-triangle intersection for the entire mesh using BVH
+  // Ray-triangle intersection for the entire mesh using BVH and cache
   def intersectRay(rayOrigin: Coord, rayDirection: Coord): Option[(Double, Triangle)] = {
-    val metrics = new BVHMetrics()
-    val result = bvh.intersectRay(rayOrigin, rayDirection, metrics, 0)
-    lastMetrics = Some(metrics)
-    result
+    // First check the cache
+    cache.findIntersection(rayOrigin, rayDirection) match {
+      case hit@Some(_) => 
+        // Cache hit, no need for BVH traversal
+        lastMetrics = Some(new BVHMetrics()) // Empty metrics for cache hit
+        hit
+      case None =>
+        // Cache miss, traverse BVH
+        val metrics = new BVHMetrics()
+        val result = bvh.intersectRay(rayOrigin, rayDirection, metrics, 0)
+        // Record hit in cache if found
+        result.foreach { case (_, triangle) => cache.recordHit(triangle) }
+        lastMetrics = Some(metrics)
+        result
+    }
   }
 }

@@ -66,6 +66,35 @@ class ModelPerformanceSpec extends AnyFlatSpec with Matchers {
     val transformTime = (System.nanoTime() - startTransform) / 1000000 // ms
     println(s"\nWorld Transform Time: ${transformTime}ms")
     
+    // Test single ray intersection for BVH metrics
+    println("\nBVH Performance Test (Single Ray):")
+    val testRay = scaledMesh.intersectRay(Coord(0, 0, -10), Coord(0, 0, 1))
+    scaledMesh.getLastTraversalMetrics.foreach(println)
+    
+    // Test cache performance with repeated rays
+    println("\nCache Performance Test:")
+    val testPoints = Seq(
+      (Coord(0, 0, -10), Coord(0, 0, 1)),
+      (Coord(1, 1, -10), Coord(0, 0, 1)),
+      (Coord(-1, -1, -10), Coord(0, 0, 1))
+    )
+    
+    // First pass - should miss cache
+    testPoints.foreach { case (origin, dir) =>
+      scaledMesh.intersectRay(origin, dir)
+    }
+    
+    // Second pass - should hit cache
+    testPoints.foreach { case (origin, dir) =>
+      scaledMesh.intersectRay(origin, dir)
+    }
+    
+    val (cacheSize, cacheHits, hitRate) = scaledMesh.getCacheStats
+    println(s"Cache Statistics:")
+    println(s"  Cache Size: $cacheSize")
+    println(s"  Total Hits: $cacheHits")
+    println(s"  Hit Rate: ${f"$hitRate%.1f"} hits/entry")
+    
     // Detailed render timing
     println("\nRender Performance Breakdown:")
     
