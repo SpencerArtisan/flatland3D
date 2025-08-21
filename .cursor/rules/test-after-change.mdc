@@ -3,3 +3,4 @@ description: always runs all tests after a change and fix any failures
 globs:
 alwaysApply: true
 ---
+After making any code changes, always run `sbt test` to ensure all tests pass. If any tests fail, fix the issues before proceeding.
