@@ -69,20 +69,6 @@ case class Triangle(v0: Coord, v1: Coord, v2: Coord) {
 case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   val center: Coord = Coord(0, 0, 0)
   
-  // Build BVH acceleration structure
-  private lazy val bvh = BVH.build(triangles)
-  private lazy val bounds = BoundingBox.fromTriangles(triangles)
-  
-  // Triangle cache for frequently hit triangles
-  private val cache = new TriangleCache(32) // Cache size tuned for performance
-  
-  // Track BVH traversal metrics
-  private var lastMetrics: Option[BVHMetrics] = None
-  def getLastTraversalMetrics: Option[BVHMetrics] = lastMetrics
-  
-  // Get cache statistics
-  def getCacheStats: (Int, Int, Double) = cache.stats
-  
   // Configuration constants
   private val RAY_DIRECTIONS = Seq(
     Coord(1, 0, 0),
@@ -92,20 +78,13 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   )
   
   def occupiesSpaceAt(coord: Coord): Boolean = {
-    // Quick reject using bounding box
-    if (!bounds.intersectRay(coord, RAY_DIRECTIONS.head)) return false
-    
     // For triangle meshes, we use ray-casting with multiple rays to handle edge cases
     val results = RAY_DIRECTIONS.map { rayDirection =>
-      // Use BVH for intersection testing
       var intersectionCount = 0
-      var currentHit = bvh.intersectRay(coord, rayDirection)
-      while (currentHit.isDefined) {
-        intersectionCount += 1
-        // Move origin slightly past the hit point and continue
-        val (hitDist, _) = currentHit.get
-        val newOrigin = coord + rayDirection * (hitDist + 1e-4)
-        currentHit = bvh.intersectRay(newOrigin, rayDirection)
+      triangles.foreach { triangle =>
+        if (triangle.intersectRay(coord, rayDirection).isDefined) {
+          intersectionCount += 1
+        }
       }
       intersectionCount % 2 == 1
     }
@@ -118,7 +97,9 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
     // Find closest triangle
     val directions = RAY_DIRECTIONS ++ RAY_DIRECTIONS.map(_ * -1)
     val hits = directions.flatMap { dir =>
-      bvh.intersectRay(local, dir)
+      triangles.flatMap { triangle =>
+        triangle.intersectRay(local, dir).map(dist => (dist, triangle))
+      }
     }
     
     if (hits.isEmpty) {
@@ -136,22 +117,20 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
     }
   }
   
-  // Ray-triangle intersection for the entire mesh using BVH and cache
+  // Ray-triangle intersection for the entire mesh
   def intersectRay(rayOrigin: Coord, rayDirection: Coord): Option[(Double, Triangle)] = {
-    // First check the cache
-    cache.findIntersection(rayOrigin, rayDirection) match {
-      case hit@Some(_) => 
-        // Cache hit, no need for BVH traversal
-        lastMetrics = Some(new BVHMetrics()) // Empty metrics for cache hit
-        hit
-      case None =>
-        // Cache miss, traverse BVH
-        val metrics = new BVHMetrics()
-        val result = bvh.intersectRay(rayOrigin, rayDirection, metrics, 0)
-        // Record hit in cache if found
-        result.foreach { case (_, triangle) => cache.recordHit(triangle) }
-        lastMetrics = Some(metrics)
-        result
+    var closestHit: Option[(Double, Triangle)] = None
+    var closestDist = Double.PositiveInfinity
+    
+    triangles.foreach { triangle =>
+      triangle.intersectRay(rayOrigin, rayDirection) match {
+        case Some(dist) if dist < closestDist =>
+          closestDist = dist
+          closestHit = Some((dist, triangle))
+        case _ =>
+      }
     }
+    
+    closestHit
   }
 }
