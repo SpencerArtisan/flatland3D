@@ -11,7 +11,12 @@
       "Bash(cat:*)",
       "Bash(scala -cp target/scala-2.13/classes debug_unified_coords.scala)",
       "Bash(git checkout:*)",
-      "Bash(scala -cp target/scala-2.13/classes debug_triangle_cube.scala)"
+      "Bash(scala -cp target/scala-2.13/classes debug_triangle_cube.scala)",
+      "Bash(scala -cp target/scala-2.13/classes debug_worldspec.scala)",
+      "Bash(scala -cp target/scala-2.13/classes debug_height.scala)",
+      "Bash(scala -cp target/scala-2.13/classes debug_shading.scala)",
+      "Bash(scala -cp target/scala-2.13/classes DebugConsistencyCheck)",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": []
