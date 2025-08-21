@@ -115,7 +115,7 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
   }
   
   override def surfaceNormalAt(local: Coord): Coord = {
-    // Use BVH to find closest intersection in multiple directions
+    // Find closest triangle
     val directions = RAY_DIRECTIONS ++ RAY_DIRECTIONS.map(_ * -1)
     val hits = directions.flatMap { dir =>
       bvh.intersectRay(local, dir)
@@ -125,8 +125,14 @@ case class TriangleMesh(id: Int, triangles: Seq[Triangle]) extends Shape {
       // Fallback if no intersections found
       Coord(0, 0, 1)
     } else {
-      // Use normal of closest triangle
-      hits.minBy(_._1)._2.normal
+      // Get normal of closest triangle
+      val (_, triangle) = hits.minBy(_._1)
+      val normal = triangle.normal
+      
+      // Determine if we're inside or outside by checking if the normal points towards us
+      val toPoint = local - triangle.centroid
+      val dot = toPoint.dot(normal)
+      if (dot < 0) normal * -1 else normal
     }
   }
   

@@ -28,28 +28,28 @@ object TriangleShapes {
     // Define triangles for each face (counter-clockwise from outside)
     val triangles = Seq(
       // Back face (z = -half)
-      Triangle(vertices(0), vertices(2), vertices(1)),
-      Triangle(vertices(0), vertices(3), vertices(2)),
+      Triangle(vertices(0), vertices(1), vertices(2)),
+      Triangle(vertices(0), vertices(2), vertices(3)),
       
       // Front face (z = +half)
-      Triangle(vertices(4), vertices(5), vertices(6)),
-      Triangle(vertices(4), vertices(6), vertices(7)),
+      Triangle(vertices(5), vertices(4), vertices(7)),
+      Triangle(vertices(5), vertices(7), vertices(6)),
       
       // Left face (x = -half)
-      Triangle(vertices(0), vertices(4), vertices(7)),
-      Triangle(vertices(0), vertices(7), vertices(3)),
+      Triangle(vertices(4), vertices(0), vertices(3)),
+      Triangle(vertices(4), vertices(3), vertices(7)),
       
       // Right face (x = +half)
-      Triangle(vertices(1), vertices(2), vertices(6)),
-      Triangle(vertices(1), vertices(6), vertices(5)),
+      Triangle(vertices(1), vertices(2), vertices(6)),  // Counter-clockwise when viewed from outside (right face)
+      Triangle(vertices(1), vertices(6), vertices(5)),  // Counter-clockwise when viewed from outside (right face)
       
       // Bottom face (y = -half)
-      Triangle(vertices(0), vertices(1), vertices(5)),
-      Triangle(vertices(0), vertices(5), vertices(4)),
+      Triangle(vertices(4), vertices(5), vertices(1)),
+      Triangle(vertices(4), vertices(1), vertices(0)),
       
       // Top face (y = +half)
-      Triangle(vertices(3), vertices(7), vertices(6)),
-      Triangle(vertices(3), vertices(6), vertices(2))
+      Triangle(vertices(3), vertices(2), vertices(6)),
+      Triangle(vertices(3), vertices(6), vertices(7))
     )
     
     TriangleMesh(id, triangles)

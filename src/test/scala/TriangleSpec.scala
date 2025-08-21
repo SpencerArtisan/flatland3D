@@ -69,10 +69,10 @@ class TriangleSpec extends AnyFlatSpec with should.Matchers {
   "TriangleCube" should "provide surface normals" in {
     val cube = TriangleShapes.cube(1, 2.0)
     
-    // Test normals at different face centers
-    val rightFaceNormal = cube.surfaceNormalAt(Coord(1, 0, 0))
-    val topFaceNormal = cube.surfaceNormalAt(Coord(0, 1, 0))
-    val frontFaceNormal = cube.surfaceNormalAt(Coord(0, 0, 1))
+    // Test normals at different face centers (cube is 2.0 units wide, so faces are at ±1.0)
+    val rightFaceNormal = cube.surfaceNormalAt(Coord(1.01, 0, 0))  // Just outside right face at x=+1.0
+    val topFaceNormal = cube.surfaceNormalAt(Coord(0, 1.01, 0))    // Just outside top face at y=+1.0
+    val frontFaceNormal = cube.surfaceNormalAt(Coord(0, 0, 1.01))  // Just outside front face at z=+1.0
     
     // Normals should point outward from cube faces
     rightFaceNormal.x should be > 0.0
