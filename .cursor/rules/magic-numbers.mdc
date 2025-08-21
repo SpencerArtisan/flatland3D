@@ -1,0 +1,5 @@
+---
+description: Avoid magic numbers
+alwaysApply: false
+---
+Avoid introducing magic numbers in the code. Use constants instead. But don't be silly about it.  If halving a value, for example, it is fine to say / 2 rather than introduce a constant for 2!
