@@ -1,0 +1,6 @@
+---
+description: Discuss design before proceeding
+globs:
+alwaysApply: false
+---
+Before adding a new feature, give a brief summary of your recommended design. Do not proceed to write code until we have agreed on the best design.
