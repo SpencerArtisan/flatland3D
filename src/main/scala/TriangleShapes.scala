@@ -103,4 +103,108 @@ object TriangleShapes {
     
     TriangleMesh(id, triangles)
   }
+
+  // Create Elite Cobra Mk III spaceship (for Easter egg)
+  // Based on authentic 1984 Elite wireframe design
+  def cobra(id: Int, size: Double): TriangleMesh = {
+    require(size > 0, "Cobra size must be positive")
+    val scale = size / 8.0  // Normalize to size 8 reference
+    
+    // Authentic Elite Cobra Mk III vertices - based on 1984 wireframe design
+    // Coordinate system: +X=right, +Y=up, +Z=forward (toward nose)
+    val vertices = Seq(
+      // Blunt angular nose cone (characteristic Elite shape)
+      Coord(0, 0, 4.5 * scale),                        // 0: Nose tip
+      Coord(-1.0 * scale, 0, 3.8 * scale),            // 1: Nose left edge
+      Coord(1.0 * scale, 0, 3.8 * scale),             // 2: Nose right edge
+      Coord(0, -0.8 * scale, 3.8 * scale),            // 3: Nose bottom edge
+      Coord(0, 0.8 * scale, 3.8 * scale),             // 4: Nose top edge
+      
+      // Tapering diamond cross-section main body
+      Coord(-1.4 * scale, 0, 2.0 * scale),            // 5: Front left body edge
+      Coord(1.4 * scale, 0, 2.0 * scale),             // 6: Front right body edge
+      Coord(0, -1.0 * scale, 2.0 * scale),            // 7: Front bottom body edge
+      Coord(0, 1.0 * scale, 2.0 * scale),             // 8: Front top body edge
+      Coord(-1.2 * scale, 0, 0.5 * scale),            // 9: Mid-left body
+      Coord(1.2 * scale, 0, 0.5 * scale),             // 10: Mid-right body
+      Coord(0, -0.8 * scale, 0.5 * scale),            // 11: Mid-bottom body
+      Coord(0, 0.8 * scale, 0.5 * scale),             // 12: Mid-top body
+      
+      // Gracefully swept-back wings
+      Coord(-3.2 * scale, 0.2 * scale, -1.0 * scale), // 13: Left wing tip
+      Coord(3.2 * scale, 0.2 * scale, -1.0 * scale), // 14: Right wing tip
+      Coord(-2.2 * scale, -0.4 * scale, -0.5 * scale), // 15: Left wing bottom
+      Coord(2.2 * scale, -0.4 * scale, -0.5 * scale), // 16: Right wing bottom
+      Coord(-2.2 * scale, 0.6 * scale, -0.5 * scale), // 17: Left wing top
+      Coord(2.2 * scale, 0.6 * scale, -0.5 * scale), // 18: Right wing top
+      
+      // Distinct engine pods
+      Coord(-1.8 * scale, -0.6 * scale, -3.2 * scale), // 19: Left engine rear
+      Coord(1.8 * scale, -0.6 * scale, -3.2 * scale), // 20: Right engine rear
+      Coord(-1.8 * scale, 0.2 * scale, -2.6 * scale), // 21: Left engine mid
+      Coord(1.8 * scale, 0.2 * scale, -2.6 * scale), // 22: Right engine mid
+      
+      // Additional vertices for engine pod detail
+      Coord(-1.8 * scale, -0.2 * scale, -2.8 * scale), // 23: Left engine rear top
+      Coord(1.8 * scale, -0.2 * scale, -2.8 * scale), // 24: Right engine rear top
+      Coord(-1.8 * scale, -0.4 * scale, -2.5 * scale), // 25: Left engine mid bottom
+      Coord(1.8 * scale, -0.4 * scale, -2.5 * scale)  // 26: Right engine mid bottom
+    )
+    
+    // Define triangles for authentic Elite Cobra wireframe appearance
+    val triangles = Seq(
+      // Blunt angular nose cone (4 triangular faces)
+      Triangle(vertices(0), vertices(1), vertices(4)),  // Left-top nose face
+      Triangle(vertices(0), vertices(4), vertices(2)),  // Right-top nose face  
+      Triangle(vertices(0), vertices(2), vertices(3)),  // Right-bottom nose face
+      Triangle(vertices(0), vertices(3), vertices(1)),  // Left-bottom nose face
+      
+      // Tapering diamond body - front section
+      Triangle(vertices(1), vertices(5), vertices(8)),  // Left-top front
+      Triangle(vertices(2), vertices(8), vertices(6)),  // Right-top front
+      Triangle(vertices(2), vertices(6), vertices(7)),  // Right-bottom front
+      Triangle(vertices(1), vertices(7), vertices(5)),  // Left-bottom front
+      Triangle(vertices(3), vertices(7), vertices(1)),  // Bottom-left front
+      Triangle(vertices(3), vertices(2), vertices(7)),  // Bottom-right front
+      Triangle(vertices(4), vertices(1), vertices(8)),  // Top-left front
+      Triangle(vertices(4), vertices(8), vertices(2)),  // Top-right front
+      
+      // Tapering diamond body - middle section
+      Triangle(vertices(5), vertices(9), vertices(12)), // Left-top mid
+      Triangle(vertices(6), vertices(12), vertices(10)), // Right-top mid
+      Triangle(vertices(6), vertices(10), vertices(11)), // Right-bottom mid
+      Triangle(vertices(5), vertices(11), vertices(9)), // Left-bottom mid
+      Triangle(vertices(7), vertices(11), vertices(5)), // Bottom-left mid
+      Triangle(vertices(7), vertices(6), vertices(11)), // Bottom-right mid
+      Triangle(vertices(8), vertices(5), vertices(12)), // Top-left mid
+      Triangle(vertices(8), vertices(12), vertices(6)), // Top-right mid
+      
+      // Gracefully swept wings
+      Triangle(vertices(9), vertices(15), vertices(17)), // Left wing root
+      Triangle(vertices(9), vertices(17), vertices(12)), // Left wing top
+      Triangle(vertices(15), vertices(13), vertices(17)), // Left wing outer
+      Triangle(vertices(10), vertices(12), vertices(18)), // Right wing root
+      Triangle(vertices(10), vertices(18), vertices(16)), // Right wing top
+      Triangle(vertices(16), vertices(18), vertices(14)), // Right wing outer
+      
+      // Distinct engine pods - left
+      Triangle(vertices(15), vertices(21), vertices(25)), // Left engine top front
+      Triangle(vertices(25), vertices(19), vertices(15)), // Left engine bottom front
+      Triangle(vertices(21), vertices(23), vertices(19)), // Left engine top rear
+      Triangle(vertices(19), vertices(25), vertices(21)), // Left engine side
+      
+      // Distinct engine pods - right
+      Triangle(vertices(16), vertices(26), vertices(22)), // Right engine top front
+      Triangle(vertices(20), vertices(16), vertices(26)), // Right engine bottom front
+      Triangle(vertices(24), vertices(22), vertices(20)), // Right engine top rear
+      Triangle(vertices(26), vertices(22), vertices(20)), // Right engine side
+      
+      // Engine pod connections
+      Triangle(vertices(21), vertices(22), vertices(25)), // Engine connection top
+      Triangle(vertices(25), vertices(26), vertices(19)), // Engine connection bottom
+      Triangle(vertices(19), vertices(26), vertices(20))  // Engine connection rear
+    )
+    
+    TriangleMesh(id, triangles)
+  }
 }

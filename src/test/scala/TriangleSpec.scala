@@ -79,4 +79,57 @@ class TriangleSpec extends AnyFlatSpec with should.Matchers {
     topFaceNormal.y should be > 0.0  
     frontFaceNormal.z should be > 0.0
   }
+
+  // Elite Cobra spaceship tests
+  "TriangleCobra" should "be constructed with correct triangle count" in {
+    val cobra = TriangleShapes.cobra(1, 8.0) // Size 8.0 to match existing shapes
+    
+    // Authentic Elite Cobra should have specific triangle count for classic wireframe
+    // Based on original Elite wireframe: sharp nose, diamond body, swept wings
+    cobra.triangles.length should be >= 20
+    cobra.triangles.length should be <= 40  // Increased to allow for more detailed engine pods
+    
+    // All triangles should have valid normals
+    cobra.triangles.foreach { triangle =>
+      triangle.normal.magnitude should be (1.0 +- 0.001)
+    }
+  }
+
+  "TriangleCobra" should "have distinctive spaceship proportions" in {
+    val cobra = TriangleShapes.cobra(1, 8.0)
+    
+    // Calculate bounding box to verify spaceship proportions
+    val allVertices = cobra.triangles.flatMap(t => Seq(t.v0, t.v1, t.v2))
+    val minX = allVertices.map(_.x).min
+    val maxX = allVertices.map(_.x).max
+    val minY = allVertices.map(_.y).min
+    val maxY = allVertices.map(_.y).max
+    val minZ = allVertices.map(_.z).min
+    val maxZ = allVertices.map(_.z).max
+    
+    val width = maxX - minX
+    val height = maxY - minY
+    val length = maxZ - minZ
+    
+    // Cobra should have authentic Elite proportions (length > width)
+    val lengthToWidthRatio = length / width
+    lengthToWidthRatio should be > 1.2  // Authentic Elite Cobra is longer than it is wide
+    
+    // Should fit within the specified size bounds
+    width should be <= 8.0
+    height should be <= 8.0
+    length should be <= 8.0
+  }
+
+  "TriangleCobra" should "provide surface normals" in {
+    val cobra = TriangleShapes.cobra(1, 8.0)
+    
+    // Test that we can get normals from different parts of the spaceship
+    val frontNormal = cobra.surfaceNormalAt(Coord(0, 0, 4))  // Front nose area
+    val rearNormal = cobra.surfaceNormalAt(Coord(0, 0, -4))  // Rear engine area
+    
+    // Normals should be valid unit vectors
+    frontNormal.magnitude should be (1.0 +- 0.001)
+    rearNormal.magnitude should be (1.0 +- 0.001)
+  }
 }
