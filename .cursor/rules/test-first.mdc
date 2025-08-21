@@ -1,0 +1,8 @@
+---
+description: When adding new functionality, write the test first
+globs:
+alwaysApply: true
+---
+Your workflow should be red green refactor.  Before adding new code, including new classes, first write a test to demonstate the required functionality, then run the test to show it fails in the expected way, then write the code to make the test pass, then run the test to confirm it is green.  The general rules is to never change code without first creating a failing test to demonstrate the change you are about to make works.  Call this out clearly as you go so I have confidence you are following the red green refactor workflow.
+Note that there are two types of "Red" failure. One is when the code doesn't yet exist - a compile failure. The other is when the code exists, but gices the wrong result - a runtime test failure. You should strictly follow the workflow - Red (compile) -> Red (runtime) -> Green -> Refactor.
+Ensure your tests are as comprehensive as possible.
