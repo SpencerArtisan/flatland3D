@@ -384,7 +384,7 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
     easterEggEngine.isEasterEggActive should be(true)
   }
 
-  it should "toggle Easter egg mode on and off" in {
+  it should "cycle through models in Easter egg mode" in {
     val easterEggUserInteraction = new TestEasterEggUserInteraction()
     val easterEggEngine = new AnimationEngine(
       world = testWorld,
@@ -396,16 +396,16 @@ class AnimationEngineSpec extends AnyFlatSpec with should.Matchers with BeforeAn
       frameDelayMs = 66
     )
     
-    // Toggle on
+    // Enter Easter egg mode
     easterEggUserInteraction.requestEasterEggToggle()
     easterEggEngine.processDeltas()
     easterEggEngine.isEasterEggActive should be(true)
     
-    // Toggle off
+    // Press Ctrl+E again to cycle to next model
     easterEggUserInteraction.clearRequests()
     easterEggUserInteraction.requestEasterEggToggle()
     easterEggEngine.processDeltas()
-    easterEggEngine.isEasterEggActive should be(false)
+    easterEggEngine.isEasterEggActive should be(true) // Should stay in Easter egg mode
   }
 
   it should "build Elite world with single large Cobra spaceship when Easter egg is active" in {
