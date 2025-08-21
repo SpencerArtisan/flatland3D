@@ -26,63 +26,39 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
   }
 
   it should "start with default values" in {
-    keyboardInput.getCurrentRotation should be(Rotation.ZERO)
+    keyboardInput.getRotationDelta should be(Rotation.ZERO)
+    keyboardInput.getViewportDelta should be(ViewportDelta.IDENTITY)
     keyboardInput.isQuitRequested should be(false)
     keyboardInput.isResetRequested should be(false)
   }
 
   it should "process WASD keys correctly" in {
-    // Simulate key presses
-    val input = "w\na\ns\nd\n"
-    System.setIn(new ByteArrayInputStream(input.getBytes))
+    // Test individual key processing directly
+    keyboardInput.processInput(119) // 'w' - Pitch up
+    keyboardInput.processInput(97)  // 'a' - Yaw left
+    keyboardInput.processInput(115) // 's' - Pitch down
+    keyboardInput.processInput(100) // 'd' - Yaw right
     
-    keyboardInput.start()
-    
-    // Process keys
-    keyboardInput.update()
-    keyboardInput.update()
-    keyboardInput.update()
-    keyboardInput.update()
-    
-    val rotation = keyboardInput.getCurrentRotation
-    rotation.yaw should not be(0.0)
-    rotation.pitch should not be(0.0)
+    val rotationDelta = keyboardInput.getRotationDelta
+    rotationDelta.yaw should not be(0.0)
+    rotationDelta.pitch should not be(0.0)
   }
 
   it should "process ZX keys for roll" in {
-    val input = "z\nx\n"
-    System.setIn(new ByteArrayInputStream(input.getBytes))
+    keyboardInput.processInput(122) // 'z' - Roll left
+    keyboardInput.processInput(120) // 'x' - Roll right
     
-    keyboardInput.start()
-    
-    keyboardInput.update()
-    keyboardInput.update()
-    
-    val rotation = keyboardInput.getCurrentRotation
-    rotation.roll should not be(0.0)
+    val rotationDelta = keyboardInput.getRotationDelta
+    rotationDelta.roll should not be(0.0)
   }
 
   it should "handle reset key correctly" in {
-    // Set some rotation first
-    val input = "w\na\nr\n"
-    System.setIn(new ByteArrayInputStream(input.getBytes))
-    
-    keyboardInput.start()
-    
-    keyboardInput.update()
-    keyboardInput.update()
-    keyboardInput.update()
-    
+    keyboardInput.processInput(114) // 'r' - Reset
     keyboardInput.isResetRequested should be(true)
   }
 
   it should "detect quit requests" in {
-    val input = "q\n"
-    System.setIn(new ByteArrayInputStream(input.getBytes))
-    
-    keyboardInput.start()
-    keyboardInput.update()
-    
+    keyboardInput.processInput(113) // 'q' - Quit
     keyboardInput.isQuitRequested should be(true)
   }
 
@@ -116,12 +92,7 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
   }
 
   it should "process reset requests in update method" in {
-    val input = "r\n"
-    System.setIn(new ByteArrayInputStream(input.getBytes))
-    
-    keyboardInput.start()
-    keyboardInput.update()
-    
+    keyboardInput.processInput(114) // 'r' - Reset
     keyboardInput.isResetRequested should be(true)
   }
 
@@ -134,26 +105,28 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
   "KeyboardInputManager with viewport controls" should "process plus/minus keys for zoom" in {
     // Test zoom in (+)
     keyboardInput.processInput(43) // '+'
-    keyboardInput.getZoomRequests should be(1)
+    val deltaAfterZoomIn = keyboardInput.getViewportDelta
+    deltaAfterZoomIn.zoomFactor should be > 1.0
     
     // Test zoom out (-)
     keyboardInput.processInput(45) // '-'
-    keyboardInput.getZoomRequests should be(2)
+    val deltaAfterZoomOut = keyboardInput.getViewportDelta
+    deltaAfterZoomOut.zoomFactor should be < deltaAfterZoomIn.zoomFactor
   }
 
   it should "process arrow keys for panning" in {
     // Test panning in different directions
     keyboardInput.processInput(38) // Up arrow equivalent
-    keyboardInput.getPanRequests should be(1)
+    val deltaAfterUp = keyboardInput.getViewportDelta
+    deltaAfterUp.panOffset.y should be < 0.0 // Pan up = negative Y
     
     keyboardInput.processInput(40) // Down arrow equivalent
-    keyboardInput.getPanRequests should be(2)
+    val deltaAfterDown = keyboardInput.getViewportDelta
+    deltaAfterDown.panOffset.y should be(0.0) // Up + Down cancel out
     
     keyboardInput.processInput(60) // Left arrow equivalent
-    keyboardInput.getPanRequests should be(3)
-    
-    keyboardInput.processInput(62) // Right arrow equivalent
-    keyboardInput.getPanRequests should be(4)
+    val deltaAfterLeft = keyboardInput.getViewportDelta
+    deltaAfterLeft.panOffset.x should be < 0.0 // Pan left = negative X
   }
 
   it should "handle viewport reset key" in {
@@ -164,15 +137,17 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with Bef
   it should "combine rotation and viewport controls" in {
     // Test rotation
     keyboardInput.processInput(119) // 'w'
-    val rotation = keyboardInput.getCurrentRotation
-    rotation.pitch should be > 0.0
+    val rotationDelta = keyboardInput.getRotationDelta
+    rotationDelta.pitch should be > 0.0
     
     // Test zoom
     keyboardInput.processInput(43) // '+'
-    keyboardInput.getZoomRequests should be(1)
+    val viewportDelta = keyboardInput.getViewportDelta
+    viewportDelta.zoomFactor should be > 1.0
     
     // Test pan
     keyboardInput.processInput(38) // Up arrow equivalent
-    keyboardInput.getPanRequests should be(1)
+    val finalViewportDelta = keyboardInput.getViewportDelta
+    finalViewportDelta.panOffset.y should be < 0.0
   }
 }

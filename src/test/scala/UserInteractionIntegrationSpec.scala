@@ -45,7 +45,7 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
     )
     
     // Test controlled input
-    testInteraction.setRotation(Rotation(0, Math.PI/4, 0))
+    testInteraction.setRotationDelta(Rotation(0, Math.PI/4, 0))
     
     val result = engine.rotateShapes(0)
     result should be a 'right
@@ -59,7 +59,8 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
     val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
     
     // Test with TestUserInteraction
-    val testInteraction = new TestUserInteraction(quitRequested = true)
+    val testInteraction = new TestUserInteraction()
+    testInteraction.requestQuit()
     val testEngine = new AnimationEngine(
       world = world,
       userInteraction = testInteraction,
@@ -92,7 +93,8 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
     val world = World(10, 10, 10).add(TriangleShapes.cube(1, 2), Coord(5, 5, 5), Rotation.ZERO)
     
     // Test with TestUserInteraction
-    val testInteraction = new TestUserInteraction(rotation = Rotation(Math.PI/3, 0, 0))
+    val testInteraction = new TestUserInteraction()
+    testInteraction.setRotationDelta(Rotation(Math.PI/3, 0, 0))
     val testEngine = new AnimationEngine(
       world = world,
       userInteraction = testInteraction,
@@ -127,7 +129,8 @@ class UserInteractionIntegrationSpec extends AnyFlatSpec with Matchers {
     val testRotation = Rotation(Math.PI/6, Math.PI/8, 0)
     
     // Test with TestUserInteraction
-    val testInteraction = new TestUserInteraction(rotation = testRotation)
+    val testInteraction = new TestUserInteraction()
+    testInteraction.setRotationDelta(testRotation)
     val testEngine = new AnimationEngine(
       world = world,
       userInteraction = testInteraction,

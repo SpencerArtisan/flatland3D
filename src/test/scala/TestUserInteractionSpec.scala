@@ -6,30 +6,27 @@ class TestUserInteractionSpec extends AnyFlatSpec with Matchers {
   "TestUserInteraction" should "start with default values" in {
     val testInteraction = new TestUserInteraction()
     
-    testInteraction.getCurrentRotation should equal(Rotation.ZERO)
+    testInteraction.getRotationDelta should equal(Rotation.ZERO)
+    testInteraction.getViewportDelta should equal(ViewportDelta.IDENTITY)
     testInteraction.isQuitRequested should be(false)
     testInteraction.isResetRequested should be(false)
   }
   
   it should "allow setting custom initial values" in {
-    val customRotation = Rotation(Math.PI/4, Math.PI/6, 0)
-    val testInteraction = new TestUserInteraction(
-      rotation = customRotation,
-      quitRequested = true,
-      resetRequested = true
-    )
+    val testInteraction = new TestUserInteraction()
+    testInteraction.requestQuit()
+    testInteraction.requestReset()
     
-    testInteraction.getCurrentRotation should equal(customRotation)
     testInteraction.isQuitRequested should be(true)
     testInteraction.isResetRequested should be(true)
   }
   
-  it should "allow changing rotation" in {
+  it should "allow changing rotation delta" in {
     val testInteraction = new TestUserInteraction()
-    val newRotation = Rotation(Math.PI/2, 0, 0)
+    val rotationDelta = Rotation(Math.PI/2, 0, 0)
     
-    testInteraction.setRotation(newRotation)
-    testInteraction.getCurrentRotation should equal(newRotation)
+    testInteraction.setRotationDelta(rotationDelta)
+    testInteraction.getRotationDelta should equal(rotationDelta)
   }
   
   it should "allow requesting quit" in {
@@ -47,7 +44,9 @@ class TestUserInteractionSpec extends AnyFlatSpec with Matchers {
   }
   
   it should "allow clearing requests" in {
-    val testInteraction = new TestUserInteraction(quitRequested = true, resetRequested = true)
+    val testInteraction = new TestUserInteraction()
+    testInteraction.requestQuit()
+    testInteraction.requestReset()
     
     testInteraction.clearRequests()
     testInteraction.isQuitRequested should be(false)
