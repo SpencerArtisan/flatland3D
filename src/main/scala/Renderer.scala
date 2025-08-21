@@ -92,7 +92,7 @@ object Renderer {
   }
 
   private def brightnessToCharacter(brightness: Double, characterGradient: String): Char = {
-    val quantizationLevels = 4
+    val quantizationLevels = 8
     val quantizedBrightness = Math.round(brightness * (quantizationLevels - 1)).toDouble / (quantizationLevels - 1)
     val characterIndex = Math.min(characterGradient.length - 1, Math.max(0, (quantizedBrightness * (characterGradient.length - 1)).toInt))
     characterGradient.charAt(characterIndex)
