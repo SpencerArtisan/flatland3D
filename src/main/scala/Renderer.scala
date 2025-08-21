@@ -108,13 +108,27 @@ object Renderer {
                          lightDirection: Coord = Coord(0, 0, -1),
                          chars: String = DEFAULT_SHADING_CHARS,
                          ambient: Double = DEFAULT_AMBIENT,
-                         xScale: Int = DEFAULT_X_SCALE): String = {
+                         xScale: Int = DEFAULT_X_SCALE,
+                         viewport: Option[Viewport] = None): String = {
     val light = lightDirection.normalize
-    val frameBuffer = createFrameBuffer(world.width, world.height)
-    val depthBuffer = createDepthBuffer(world.width, world.height)
+    
+    // Determine rendering dimensions based on viewport or world bounds
+    val (renderWidth, renderHeight) = viewport match {
+      case Some(vp) => (vp.width, vp.height)
+      case None => (world.width, world.height)
+    }
+    
+    val frameBuffer = createFrameBuffer(renderWidth, renderHeight)
+    val depthBuffer = createDepthBuffer(renderWidth, renderHeight)
 
-    world.placements.foreach { placement =>
-      renderPlacementForward(placement, light, chars, ambient, frameBuffer, depthBuffer)
+    // Get placements to render (filtered by viewport if specified)
+    val placementsToRender = viewport match {
+      case Some(vp) => world.placementsInViewport(vp)
+      case None => world.placements
+    }
+
+    placementsToRender.foreach { placement =>
+      renderPlacementForward(placement, light, chars, ambient, frameBuffer, depthBuffer, viewport)
     }
 
     frameBufferToString(frameBuffer, xScale)
@@ -131,10 +145,11 @@ object Renderer {
                                    chars: String, 
                                    ambient: Double,
                                    frameBuffer: Array[Array[Char]], 
-                                   depthBuffer: Array[Array[Double]]): Unit = {
+                                   depthBuffer: Array[Array[Double]],
+                                   viewport: Option[Viewport] = None): Unit = {
     placement.shape match {
       case triangleMesh: TriangleMesh =>
-        renderTriangleMeshForward(triangleMesh, placement, light, chars, ambient, frameBuffer, depthBuffer)
+        renderTriangleMeshForward(triangleMesh, placement, light, chars, ambient, frameBuffer, depthBuffer, viewport)
       case _ =>
         // Log unsupported shape type instead of throwing exception
         // For now, skip rendering unsupported shapes
@@ -195,7 +210,8 @@ object Renderer {
                                       chars: String,
                                       ambient: Double,
                                       frameBuffer: Array[Array[Char]],
-                                      depthBuffer: Array[Array[Double]]): Unit = {
+                                      depthBuffer: Array[Array[Double]],
+                                      viewport: Option[Viewport] = None): Unit = {
     // For triangle meshes, cast rays from screen pixels to find intersections
     for {
       y <- frameBuffer.indices
@@ -204,8 +220,21 @@ object Renderer {
       val screenCoord = Coord(x, y, 0)
       val rayDirection = Coord(0, 0, 1) // Ray pointing into screen
       
+      // Transform screen coordinates to world coordinates if using viewport
+      val worldRayOrigin = viewport match {
+        case Some(vp) => 
+          // Transform viewport coordinates back to world coordinates
+          val viewportCoord = Coord(x, y, 0)
+          val worldCoord = Coord(
+            vp.worldBounds.minX + x,
+            vp.worldBounds.minY + y,
+            vp.worldBounds.minZ
+          )
+          worldCoord
+        case None => screenCoord
+      }
+      
       // Transform ray to shape's local coordinate system
-      val worldRayOrigin = screenCoord
       val localRayOrigin = placement.rotation.inverse.applyTo(worldRayOrigin - placement.origin)
       val localRayDirection = placement.rotation.inverse.applyTo(rayDirection)
       

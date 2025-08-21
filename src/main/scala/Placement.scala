@@ -28,6 +28,11 @@ case class Placement(origin: Coord, rotation: Rotation, shape: Shape) {
   
   // Check if this placement would extend beyond world boundaries
   def wouldExtendBeyondBounds(worldWidth: Int, worldHeight: Int, worldDepth: Int): Boolean = {
+    // For infinite worlds (dimensions = 0), no boundary checking needed
+    if (worldWidth == 0 && worldHeight == 0 && worldDepth == 0) {
+      return false
+    }
+    
     require(worldWidth > 0 && worldHeight > 0 && worldDepth > 0, "World dimensions must be positive")
     
     shape match {

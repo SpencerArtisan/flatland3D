@@ -11,6 +11,10 @@ class AnimationEngine(
 ) {
   @volatile private var running = true
   
+  // State management - AnimationEngine now owns the state
+  private var currentRotation: Rotation = Rotation.ZERO
+  private var currentViewport: Viewport = Viewport.centeredAt(cubeCenter)
+  
   def run(): Unit = {
     // Start the user interaction system
     userInteraction match {
@@ -30,9 +34,14 @@ class AnimationEngine(
     LazyList.from(0).map { frameIndex =>
       rotateShapes(frameIndex) match {
         case Right(w) =>
-          val rendered = Renderer.renderShadedForward(w, lightDirection = Coord(-1, -1, -1), ambient = 0.35, xScale = 2)
-          val actualRotation = userInteraction.getCurrentRotation
-          addRotationDetails(rendered, frameIndex, actualRotation)
+          val rendered = Renderer.renderShadedForward(
+            w, 
+            lightDirection = Coord(-1, -1, -1), 
+            ambient = 0.35, 
+            xScale = 2,
+            viewport = Some(currentViewport)
+          )
+          addRotationDetails(rendered, frameIndex, currentRotation)
         case Left(_) => "" // Skip errors
       }
     }
@@ -45,6 +54,9 @@ class AnimationEngine(
     while (frameIterator.hasNext && running) {
       // Update user interaction state
       userInteraction.update()
+      
+      // Process deltas from user interaction
+      processUserInputDeltas()
       
       // Check for quit request
       if (userInteraction.isQuitRequested) {
@@ -84,12 +96,83 @@ class AnimationEngine(
   }
 
   def rotateShapes(frameIndex: Int): Either[NoSuchShape, World] = {
-    // Use interactive rotation from UserInteraction instead of automatic rotation
-    val userRotation = userInteraction.getCurrentRotation
-    
-    // Reset to start position and apply the user-controlled rotation
-    val worldWithReset = world.reset.add(TriangleShapes.cube(shapeId, cubeSize), cubeCenter, userRotation)
+    // Use current rotation state managed by AnimationEngine
+    val worldWithReset = world.reset.add(TriangleShapes.cube(shapeId, cubeSize), cubeCenter, currentRotation)
     Right(worldWithReset)
+  }
+
+  // Viewport management methods
+  def zoomViewport(factor: Double): Either[String, Unit] = {
+    try {
+      currentViewport = currentViewport.zoom(factor)
+      Right(())
+    } catch {
+      case e: IllegalArgumentException => Left(e.getMessage)
+    }
+  }
+
+  def panViewport(offset: Coord): Either[String, Unit] = {
+    try {
+      currentViewport = currentViewport.pan(offset)
+      Right(())
+    } catch {
+      case e: Exception => Left(e.getMessage)
+    }
+  }
+
+  def resetViewport(): Either[String, Unit] = {
+    try {
+      currentViewport = Viewport.centeredAt(cubeCenter)
+      Right(())
+    } catch {
+      case e: Exception => Left(e.getMessage)
+    }
+  }
+
+  def setViewport(viewport: Viewport): Unit = {
+    currentViewport = viewport
+  }
+
+  def getCurrentViewport: Option[Viewport] = Some(currentViewport)
+  def getCurrentRotation: Rotation = currentRotation
+
+  // Process deltas from user interaction and apply to internal state
+  private def processUserInputDeltas(): Unit = {
+    // Apply rotation delta
+    val rotationDelta = userInteraction.getRotationDelta
+    if (rotationDelta != Rotation.ZERO) {
+      currentRotation = Rotation(
+        yaw = currentRotation.yaw + rotationDelta.yaw,
+        pitch = currentRotation.pitch + rotationDelta.pitch,
+        roll = currentRotation.roll + rotationDelta.roll
+      )
+    }
+    
+    // Apply viewport delta
+    val viewportDelta = userInteraction.getViewportDelta
+    if (!viewportDelta.isIdentity) {
+      // Apply zoom
+      if (viewportDelta.zoomFactor != 1.0) {
+        currentViewport = currentViewport.zoom(viewportDelta.zoomFactor)
+      }
+      
+      // Apply pan
+      if (viewportDelta.panOffset != Coord.ZERO) {
+        currentViewport = currentViewport.pan(viewportDelta.panOffset)
+      }
+    }
+    
+    // Handle reset requests
+    if (userInteraction.isResetRequested) {
+      currentRotation = Rotation.ZERO
+    }
+    
+    if (userInteraction.isViewportResetRequested) {
+      currentViewport = Viewport.centeredAt(cubeCenter)
+    }
+    
+    // Clear processed deltas
+    userInteraction.clearDeltas()
   }
   
   // Add control instructions to the rendered frame

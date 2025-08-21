@@ -1,10 +1,10 @@
 object Main {
   // Configuration constants
-  private val SHAPE_ID = 101
-  private val WORLD_SIZE = 22
-  private val CUBE_SIZE = 10
-  private val CUBE_CENTER = Coord(11, 11, 11)
-  private val FRAME_DELAY_MS = 66
+  val SHAPE_ID = 101
+  val WORLD_SIZE = 22
+  val CUBE_SIZE = 10
+  val CUBE_CENTER = Coord(11, 11, 11)
+  val FRAME_DELAY_MS = 66
 
   def main(args: Array[String]): Unit = {
     val world = buildWorld
@@ -21,12 +21,13 @@ object Main {
     )
     
     println("Flatland3D Interactive Mode")
-    println("Use WASD to rotate the cube, Z/X to roll, R to reset, Q/ESC to quit")
+    println("Rotation: WASD to rotate the cube, Z/X to roll, R to reset")
+    println("Viewport: +/- to zoom, V to reset viewport, Q/ESC to quit")
     
     animationEngine.run()
   }
 
-  private def buildWorld =
-    World(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE)
+  def buildWorld =
+    World.infinite
       .add(TriangleShapes.cube(SHAPE_ID, CUBE_SIZE), CUBE_CENTER, Rotation.ZERO)
 }

@@ -42,3 +42,32 @@ object Coord {
     )
   }
 }
+
+/**
+ * Represents viewport changes from user input.
+ * Uses a state-based approach similar to Rotation.
+ */
+case class ViewportDelta(
+  zoomFactor: Double = 1.0,        // 1.0 = no change, >1 = zoom in, <1 = zoom out
+  panOffset: Coord = Coord.ZERO    // Offset to pan the viewport center
+) {
+  require(zoomFactor > 0, "Zoom factor must be positive")
+  
+  // Check if this represents no change
+  def isIdentity: Boolean = zoomFactor == 1.0 && panOffset == Coord.ZERO
+  
+  // Combine two viewport deltas
+  def combine(other: ViewportDelta): ViewportDelta = ViewportDelta(
+    zoomFactor = this.zoomFactor * other.zoomFactor,
+    panOffset = this.panOffset + other.panOffset
+  )
+}
+
+object ViewportDelta {
+  val IDENTITY = ViewportDelta()
+  
+  // Common viewport operations
+  def zoomIn(factor: Double = 1.2): ViewportDelta = ViewportDelta(zoomFactor = factor)
+  def zoomOut(factor: Double = 0.8): ViewportDelta = ViewportDelta(zoomFactor = factor)
+  def pan(offset: Coord): ViewportDelta = ViewportDelta(panOffset = offset)
+}

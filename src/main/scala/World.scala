@@ -24,4 +24,37 @@ case class World(width: Int, height: Int, depth: Int, private val shapes: Map[In
       .toRight(NoSuchShape(shapeId))
 
   def placements: Iterable[Placement] = shapes.values
+
+  // Check if this is an infinite world (no boundaries)
+  def isInfinite: Boolean = width == 0 && height == 0 && depth == 0
+
+  // Get placements that are within a specific viewport
+  def placementsInViewport(viewport: Viewport): Iterable[Placement] = {
+    if (isInfinite) {
+      // For infinite worlds, filter by viewport bounds
+      shapes.values.filter(placement => {
+        // Check if any part of the shape is within the viewport
+        placement.shape match {
+          case triangleMesh: TriangleMesh =>
+            val vertices = triangleMesh.triangles.flatMap { triangle =>
+              Seq(triangle.v0, triangle.v1, triangle.v2)
+            }.distinct
+            
+            vertices.exists { localVertex =>
+              val worldVertex = placement.rotation.applyTo(localVertex) + placement.origin
+              viewport.containsWorldCoord(worldVertex)
+            }
+          case _ => false
+        }
+      })
+    } else {
+      // For bounded worlds, return all placements
+      shapes.values
+    }
+  }
+}
+
+object World {
+  // Create an infinite world with no boundaries
+  val infinite: World = World(0, 0, 0)
 }

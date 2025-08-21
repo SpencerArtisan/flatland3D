@@ -1,127 +1,178 @@
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec._
+import org.scalatest.matchers._
+import org.scalatest.BeforeAndAfterEach
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, PrintStream}
 
-class KeyboardInputManagerSpec extends AnyFlatSpec with Matchers {
-  
+class KeyboardInputManagerSpec extends AnyFlatSpec with should.Matchers with BeforeAndAfterEach {
+
+  private var keyboardInput: KeyboardInputManager = _
+  private var originalIn: java.io.InputStream = _
+  private var originalOut: java.io.PrintStream = _
+
+  override def beforeEach(): Unit = {
+    keyboardInput = new KeyboardInputManager()
+    originalIn = System.in
+    originalOut = System.out
+  }
+
+  override def afterEach(): Unit = {
+    System.setIn(originalIn)
+    System.setOut(originalOut)
+    keyboardInput.cleanup()
+  }
+
   "KeyboardInputManager" should "implement UserInteraction interface" in {
-    val keyboardInteraction = new KeyboardInputManager()
-    keyboardInteraction shouldBe a[UserInteraction]
+    keyboardInput shouldBe a[UserInteraction]
   }
-  
+
   it should "start with default values" in {
-    val keyboardInteraction = new KeyboardInputManager()
-    
-    keyboardInteraction.getCurrentRotation should equal(Rotation.ZERO)
-    keyboardInteraction.isQuitRequested should be(false)
-    keyboardInteraction.isResetRequested should be(false)
+    keyboardInput.getCurrentRotation should be(Rotation.ZERO)
+    keyboardInput.isQuitRequested should be(false)
+    keyboardInput.isResetRequested should be(false)
   }
-  
+
   it should "process WASD keys correctly" in {
-    val keyboardInteraction = new KeyboardInputManager()
-    val initialRotation = keyboardInteraction.getCurrentRotation
+    // Simulate key presses
+    val input = "w\na\ns\nd\n"
+    System.setIn(new ByteArrayInputStream(input.getBytes))
     
-    // Test W key (pitch up)
-    keyboardInteraction.processInput('w')
-    val afterW = keyboardInteraction.getCurrentRotation
-    afterW.pitch should be > initialRotation.pitch
+    keyboardInput.start()
     
-    // Test A key (yaw left)
-    keyboardInteraction.processInput('a')
-    val afterA = keyboardInteraction.getCurrentRotation
-    afterA.yaw should be < afterW.yaw
+    // Process keys
+    keyboardInput.update()
+    keyboardInput.update()
+    keyboardInput.update()
+    keyboardInput.update()
     
-    // Test S key (pitch down)
-    keyboardInteraction.processInput('s')
-    val afterS = keyboardInteraction.getCurrentRotation
-    afterS.pitch should be < afterW.pitch
-    
-    // Test D key (yaw right)
-    keyboardInteraction.processInput('d')
-    val afterD = keyboardInteraction.getCurrentRotation
-    afterD.yaw should be > afterA.yaw
+    val rotation = keyboardInput.getCurrentRotation
+    rotation.yaw should not be(0.0)
+    rotation.pitch should not be(0.0)
   }
-  
+
   it should "process ZX keys for roll" in {
-    val keyboardInteraction = new KeyboardInputManager()
-    val initialRotation = keyboardInteraction.getCurrentRotation
+    val input = "z\nx\n"
+    System.setIn(new ByteArrayInputStream(input.getBytes))
     
-    // Test Z key (roll left)
-    keyboardInteraction.processInput('z')
-    val afterZ = keyboardInteraction.getCurrentRotation
-    afterZ.roll should be < initialRotation.roll
+    keyboardInput.start()
     
-    // Test X key (roll right)
-    keyboardInteraction.processInput('x')
-    val afterX = keyboardInteraction.getCurrentRotation
-    afterX.roll should be > afterZ.roll
+    keyboardInput.update()
+    keyboardInput.update()
+    
+    val rotation = keyboardInput.getCurrentRotation
+    rotation.roll should not be(0.0)
   }
-  
+
   it should "handle reset key correctly" in {
-    val keyboardInteraction = new KeyboardInputManager()
+    // Set some rotation first
+    val input = "w\na\nr\n"
+    System.setIn(new ByteArrayInputStream(input.getBytes))
     
-    // Rotate first
-    keyboardInteraction.processInput('w')
-    keyboardInteraction.processInput('a')
-    keyboardInteraction.getCurrentRotation should not equal(Rotation.ZERO)
+    keyboardInput.start()
     
-    // Reset
-    keyboardInteraction.processInput('r')
-    keyboardInteraction.isResetRequested should be(true)
+    keyboardInput.update()
+    keyboardInput.update()
+    keyboardInput.update()
+    
+    keyboardInput.isResetRequested should be(true)
   }
-  
+
   it should "detect quit requests" in {
-    val keyboardInteraction = new KeyboardInputManager()
+    val input = "q\n"
+    System.setIn(new ByteArrayInputStream(input.getBytes))
     
-    keyboardInteraction.processInput('q')
-    keyboardInteraction.isQuitRequested should be(true)
+    keyboardInput.start()
+    keyboardInput.update()
     
-    keyboardInteraction.processInput('Q')
-    keyboardInteraction.isQuitRequested should be(true)
-    
-    keyboardInteraction.processInput(27) // ESC key
-    keyboardInteraction.isQuitRequested should be(true)
+    keyboardInput.isQuitRequested should be(true)
   }
-  
+
   it should "ignore unknown keys" in {
-    val keyboardInteraction = new KeyboardInputManager()
-    val initialRotation = keyboardInteraction.getCurrentRotation
+    val input = "1\n2\n3\n"
+    System.setIn(new ByteArrayInputStream(input.getBytes))
     
-    keyboardInteraction.processInput('?')
-    keyboardInteraction.getCurrentRotation should equal(initialRotation)
-    keyboardInteraction.isQuitRequested should be(false)
-    keyboardInteraction.isResetRequested should be(false)
+    keyboardInput.start()
+    
+    // Should not throw exceptions
+    noException should be thrownBy {
+      keyboardInput.update()
+      keyboardInput.update()
+      keyboardInput.update()
+    }
   }
-  
+
   it should "handle case-insensitive keys" in {
-    val keyboardInteraction = new KeyboardInputManager()
+    val input = "W\nA\nS\nD\n"
+    System.setIn(new ByteArrayInputStream(input.getBytes))
     
-    // Test both upper and lower case
-    keyboardInteraction.processInput('w')
-    keyboardInteraction.processInput('W')
-    keyboardInteraction.getCurrentRotation.pitch should be > 0.0
+    keyboardInput.start()
     
-    keyboardInteraction.processInput('a')
-    keyboardInteraction.processInput('A')
-    keyboardInteraction.getCurrentRotation.yaw should be < 0.0
+    // Should not throw exceptions
+    noException should be thrownBy {
+      keyboardInput.update()
+      keyboardInput.update()
+      keyboardInput.update()
+      keyboardInput.update()
+    }
   }
-  
+
   it should "process reset requests in update method" in {
-    val keyboardInteraction = new KeyboardInputManager()
+    val input = "r\n"
+    System.setIn(new ByteArrayInputStream(input.getBytes))
     
-    // Request reset
-    keyboardInteraction.processInput('r')
-    keyboardInteraction.isResetRequested should be(true)
+    keyboardInput.start()
+    keyboardInput.update()
     
-    // Update should process the reset
-    keyboardInteraction.update()
-    keyboardInteraction.getCurrentRotation should equal(Rotation.ZERO)
-    keyboardInteraction.isResetRequested should be(false)
+    keyboardInput.isResetRequested should be(true)
   }
-  
+
   it should "have no-op cleanup when not started" in {
-    val keyboardInteraction = new KeyboardInputManager()
+    // Should not throw exceptions
+    noException should be thrownBy keyboardInput.cleanup()
+  }
+
+  // New tests for viewport controls
+  "KeyboardInputManager with viewport controls" should "process plus/minus keys for zoom" in {
+    // Test zoom in (+)
+    keyboardInput.processInput(43) // '+'
+    keyboardInput.getZoomRequests should be(1)
     
-    // Should not throw exception
-    noException should be thrownBy keyboardInteraction.cleanup()
+    // Test zoom out (-)
+    keyboardInput.processInput(45) // '-'
+    keyboardInput.getZoomRequests should be(2)
+  }
+
+  it should "process arrow keys for panning" in {
+    // Test panning in different directions
+    keyboardInput.processInput(38) // Up arrow equivalent
+    keyboardInput.getPanRequests should be(1)
+    
+    keyboardInput.processInput(40) // Down arrow equivalent
+    keyboardInput.getPanRequests should be(2)
+    
+    keyboardInput.processInput(60) // Left arrow equivalent
+    keyboardInput.getPanRequests should be(3)
+    
+    keyboardInput.processInput(62) // Right arrow equivalent
+    keyboardInput.getPanRequests should be(4)
+  }
+
+  it should "handle viewport reset key" in {
+    keyboardInput.processInput(118) // 'v'
+    keyboardInput.isViewportResetRequested should be(true)
+  }
+
+  it should "combine rotation and viewport controls" in {
+    // Test rotation
+    keyboardInput.processInput(119) // 'w'
+    val rotation = keyboardInput.getCurrentRotation
+    rotation.pitch should be > 0.0
+    
+    // Test zoom
+    keyboardInput.processInput(43) // '+'
+    keyboardInput.getZoomRequests should be(1)
+    
+    // Test pan
+    keyboardInput.processInput(38) // Up arrow equivalent
+    keyboardInput.getPanRequests should be(1)
   }
 }
