@@ -16,24 +16,24 @@ class AnimationEngine(
   
   println("Immediate keyboard input enabled - press any key")
   
-  // Try to enable raw mode using system calls
+  // Try to enable cbreak mode (immediate input but preserve control sequences)
   private def enableRawMode(): Unit = {
     try {
-      // Try to disable line buffering using stty (Unix/Linux/macOS)
-      val pb = new ProcessBuilder("stty", "raw", "-echo")
+      // Use cbreak instead of raw to preserve ANSI escape sequences
+      val pb = new ProcessBuilder("stty", "cbreak", "-echo")
       pb.inheritIO()
       val process = pb.start()
       process.waitFor()
     } catch {
       case _: Exception => 
-        println("Warning: Could not enable raw mode")
+        println("Warning: Could not enable cbreak mode")
     }
   }
   
   private def disableRawMode(): Unit = {
     try {
       // Restore normal terminal settings
-      val pb = new ProcessBuilder("stty", "cooked", "echo")
+      val pb = new ProcessBuilder("stty", "-cbreak", "echo")
       pb.inheritIO()
       val process = pb.start()
       process.waitFor()
@@ -84,14 +84,15 @@ class AnimationEngine(
   }
 
   private def animate(frames: LazyList[String]): Unit = {
-    val clear = "\u001b[2J\u001b[H"
     try {
       frames.foreach { frame =>
         // Add key display to frame
         val frameWithKey = addKeyDisplay(frame)
         
-        Console.print(clear)
-        Console.print(frameWithKey)
+        // Clear screen and move cursor to top-left
+        print("\u001b[2J\u001b[H")
+        print(frameWithKey)
+        System.out.flush() // Ensure output is flushed
         Thread.sleep(frameDelayMs)
       }
     } finally {
