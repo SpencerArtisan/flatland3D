@@ -47,6 +47,26 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with Matchers {
     
     afterDown.pitch should be < initialRotation.pitch
   }
+
+  it should "decrease roll when 'z' key is pressed" in {
+    val manager = new KeyboardInputManager()
+    val initialRotation = manager.getCurrentRotation
+    
+    manager.processInput(122) // 'z' key ASCII code
+    val afterRollLeft = manager.getCurrentRotation
+    
+    afterRollLeft.roll should be < initialRotation.roll
+  }
+
+  it should "increase roll when 'x' key is pressed" in {
+    val manager = new KeyboardInputManager()
+    val initialRotation = manager.getCurrentRotation
+    
+    manager.processInput(120) // 'x' key ASCII code
+    val afterRollRight = manager.getCurrentRotation
+    
+    afterRollRight.roll should be > initialRotation.roll
+  }
   
   it should "reset rotation when 'r' key is pressed" in {
     val manager = new KeyboardInputManager()
@@ -69,13 +89,24 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with Matchers {
     val afterRight = manager.getCurrentRotation
     
     afterRight.yaw should be > initialRotation.yaw
+    
+    // Test uppercase Z and X as well
+    val initialRoll = manager.getCurrentRotation.roll
+    
+    manager.processInput(90) // 'Z' key ASCII code
+    val afterRollLeft = manager.getCurrentRotation
+    afterRollLeft.roll should be < initialRoll
+    
+    manager.processInput(88) // 'X' key ASCII code
+    val afterRollRight = manager.getCurrentRotation
+    afterRollRight.roll should be > afterRollLeft.roll
   }
   
   it should "ignore unknown keys" in {
     val manager = new KeyboardInputManager()
     val initialRotation = manager.getCurrentRotation
     
-    manager.processInput(120) // 'x' key ASCII code (not mapped)
+    manager.processInput(121) // 'y' key ASCII code (not mapped)
     val afterUnknown = manager.getCurrentRotation
     
     afterUnknown should equal(initialRotation)
@@ -89,5 +120,11 @@ class KeyboardInputManagerSpec extends AnyFlatSpec with Matchers {
     val rotation = manager.getCurrentRotation
     
     rotation.yaw shouldBe expectedStep +- 0.001
+    
+    // Test roll step size as well
+    manager.processInput(122) // 'z' key
+    val rollRotation = manager.getCurrentRotation
+    
+    rollRotation.roll shouldBe -expectedStep +- 0.001 // Negative because Z decreases roll
   }
 }

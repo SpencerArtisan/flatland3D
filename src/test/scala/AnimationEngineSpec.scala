@@ -234,5 +234,25 @@ class AnimationEngineSpec extends AnyFlatSpec with Matchers {
     
     // Yaw should still be increased from 'd' key
     finalRotation.yaw should be > initialRotation.yaw
+    
+    // Test Z key for roll left
+    inputManager.processInput(122) // 'z' key ASCII
+    
+    val rollWorld = engine.rotateShapes(0).right.get
+    val rollPlacement = rollWorld.placements.head
+    val rollRotation = rollPlacement.rotation
+    
+    // Roll should have decreased (rolled left)
+    rollRotation.roll should be < initialRotation.roll
+    
+    // Test X key for roll right
+    inputManager.processInput(120) // 'x' key ASCII
+    
+    val finalRollWorld = engine.rotateShapes(0).right.get
+    val finalRollPlacement = finalRollWorld.placements.head
+    val finalRollRotation = finalRollPlacement.rotation
+    
+    // Roll should have increased from X key (rolled right)
+    finalRollRotation.roll should be > rollRotation.roll
   }
 }

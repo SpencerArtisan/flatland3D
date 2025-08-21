@@ -18,7 +18,7 @@ object Main {
     )
     
     println("Flatland3D Interactive Mode")
-    println("Use WASD to rotate the cube, R to reset, Q/ESC to quit")
+    println("Use WASD to rotate the cube, Z/X to roll, R to reset, Q/ESC to quit")
     
     animationEngine.run()
   }

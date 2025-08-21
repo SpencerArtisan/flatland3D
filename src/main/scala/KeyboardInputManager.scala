@@ -19,6 +19,12 @@ class KeyboardInputManager {
       case 100 | 68 => // 'd' or 'D' - Yaw right (turn right)
         currentRotation = currentRotation.copy(yaw = currentRotation.yaw + rotationStep)
         
+      case 122 | 90 => // 'z' or 'Z' - Roll left (roll counterclockwise)
+        currentRotation = currentRotation.copy(roll = currentRotation.roll - rotationStep)
+        
+      case 120 | 88 => // 'x' or 'X' - Roll right (roll clockwise)
+        currentRotation = currentRotation.copy(roll = currentRotation.roll + rotationStep)
+        
       case 114 | 82 => // 'r' or 'R' - Reset rotation
         currentRotation = Rotation.ZERO
         
