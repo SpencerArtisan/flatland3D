@@ -96,7 +96,11 @@ class AnimationEngine(
 
   def rotateShapes(frameIndex: Int): Either[NoSuchShape, World] = {
     // Use current rotation state managed by AnimationEngine
-    val worldWithReset = world.reset.add(TriangleShapes.cube(shapeId, cubeSize), cubeCenter, currentRotation)
+    // Recreate all shapes from the original world with the current rotation
+    val originalPlacements = world.placements
+    val worldWithReset = originalPlacements.foldLeft(world.reset) { (w, placement) =>
+      w.add(placement.shape, placement.origin, currentRotation)
+    }
     Right(worldWithReset)
   }
 

@@ -61,8 +61,8 @@ case class Viewport(center: Coord, width: Int, height: Int, depth: Int) {
 }
 
 object Viewport {
-  // Default viewport size (current hardcoded values)
-  val default: Viewport = Viewport(Coord(0, 0, 0), 22, 22, 22)
+  // Default viewport size (increased to accommodate multiple shapes)
+  val default: Viewport = Viewport(Coord(0, 0, 0), 60, 60, 60)
   
   // Create viewport with default size centered at specified point
   def centeredAt(center: Coord): Viewport = default.copy(center = center)

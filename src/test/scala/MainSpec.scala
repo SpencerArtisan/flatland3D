@@ -8,22 +8,27 @@ class MainSpec extends AnyFlatSpec with should.Matchers {
     world.isInfinite should be(true)
   }
 
-  it should "place cube at the specified center coordinates" in {
+  it should "place all shapes at the specified center coordinates" in {
     val world = Main.buildWorld
-    world.placements should have size 1
+    world.placements should have size 3
     
-    val placement = world.placements.head
-    placement.origin should be(Main.CUBE_CENTER)
-    placement.shape.id should be(Main.SHAPE_ID)
+    val placements = world.placements.toSeq
+    val cubeMovement = placements.find(_.shape.id == Main.CUBE_ID).get
+    val tetraMovement = placements.find(_.shape.id == Main.TETRAHEDRON_ID).get
+    val pyramidMovement = placements.find(_.shape.id == Main.PYRAMID_ID).get
+    
+    cubeMovement.origin should be(Main.CUBE_CENTER)
+    tetraMovement.origin should be(Main.TETRAHEDRON_CENTER)
+    pyramidMovement.origin should be(Main.PYRAMID_CENTER)
   }
 
-  it should "use proportional cube size based on world size" in {
-    val cubeSize = Main.CUBE_SIZE
+  it should "use proportional shape size based on world size" in {
+    val shapeSize = Main.SHAPE_SIZE
     val worldSize = Main.WORLD_SIZE
     
-    // Cube size should be reasonable relative to world size
-    cubeSize should be < worldSize
-    cubeSize should be > 0
+    // Shape size should be reasonable relative to world size
+    shapeSize should be < worldSize
+    shapeSize should be > 0
   }
 
   it should "create AnimationEngine with viewport support" in {
@@ -34,18 +39,18 @@ class MainSpec extends AnyFlatSpec with should.Matchers {
       world = world,
       userInteraction = userInteraction,
       worldSize = Main.WORLD_SIZE,
-      cubeSize = Main.CUBE_SIZE,
-      cubeCenter = Main.CUBE_CENTER,
-      shapeId = Main.SHAPE_ID,
+      cubeSize = Main.SHAPE_SIZE,
+      cubeCenter = Main.SHAPES_CENTROID,
+      shapeId = Main.CUBE_ID,
       frameDelayMs = Main.FRAME_DELAY_MS
     )
     
     // Should have viewport support
     animationEngine.getCurrentViewport should not be(None)
     
-    // Default viewport should be centered on cube
+    // Default viewport should be centered on the shapes' centroid  
     val viewport = animationEngine.getCurrentViewport.get
-    viewport.center should be(Main.CUBE_CENTER)
+    viewport.center should be(Main.SHAPES_CENTROID)
   }
 
   it should "support viewport manipulation through user interaction" in {
@@ -56,9 +61,9 @@ class MainSpec extends AnyFlatSpec with should.Matchers {
       world = world,
       userInteraction = userInteraction,
       worldSize = Main.WORLD_SIZE,
-      cubeSize = Main.CUBE_SIZE,
-      cubeCenter = Main.CUBE_CENTER,
-      shapeId = Main.SHAPE_ID,
+      cubeSize = Main.SHAPE_SIZE,
+      cubeCenter = Main.SHAPES_CENTROID,
+      shapeId = Main.CUBE_ID,
       frameDelayMs = Main.FRAME_DELAY_MS
     )
     
