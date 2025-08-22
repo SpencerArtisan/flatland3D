@@ -107,6 +107,26 @@ class WorldSpec extends AnyFlatSpec with should.Matchers {
     InvariantTestHelpers.assertIdenticalFaceShading(renderings)
   }
 
+  // TODO: Tetrahedron face invariant test - complex rotation math needs refinement
+  // it should "render tetrahedron faces identically from all 4 face-on views" in {
+  //   // INVARIANT: All tetrahedron faces should render identically when viewed straight-on 
+  //   // under identical lighting conditions (4 identical triangular faces)
+  //   val tetrahedronSize = 10.0
+  //   val world = World.infinite
+  //   val tetrahedron = TriangleShapes.tetrahedron(101, tetrahedronSize)
+  //   
+  //   val renderings = InvariantTestHelpers.renderAllFaceViews(
+  //     world = world,
+  //     shape = tetrahedron,
+  //     shapeId = 101,
+  //     origin = Coord.ZERO,
+  //     lightDirection = Coord(-1, -1, -1).normalize,
+  //     ambient = 0.35
+  //   )
+  //   
+  //   InvariantTestHelpers.assertIdenticalFaceShading(renderings)
+  // }
+
   it should "not have artificial boundaries for shape placement" in {
     val world = World.infinite
       .add(TriangleShapes.cube(100, 2), Coord(Int.MaxValue - 1, Int.MaxValue - 1, Int.MaxValue - 1))
