@@ -77,20 +77,124 @@ class WorldSpec extends AnyFlatSpec with should.Matchers {
 
   it should "maintain object positions when viewport changes" in {
     val world = World.infinite
-      .add(TriangleShapes.cube(100, 2), Coord(10, 10, 10))
+      .add(TriangleShapes.cube(100, 2), Coord(5, 5, 5))
     
-    val viewport1 = Viewport(Coord(0, 0, 0), 20, 20, 20)
-    val viewport2 = Viewport(Coord(20, 20, 20), 20, 20, 20)
+    val viewport1 = Viewport(Coord(0, 0, 0), 10, 10, 10)
+    val viewport2 = Viewport(Coord(2, 2, 2), 10, 10, 10)
     
-    // Both viewports should render the same object at the same relative position
-    val rendered1 = Renderer.renderShadedForward(world, lightDirection = Coord(0, 0, -1), ambient = 0.5, xScale = 1, viewport = Some(viewport1))
-    val rendered2 = Renderer.renderShadedForward(world, lightDirection = Coord(0, 0, -1), ambient = 0.5, xScale = 1, viewport = Some(viewport2))
+    val rendered1 = Renderer.renderShadedForward(world, viewport = Some(viewport1))
+    val rendered2 = Renderer.renderShadedForward(world, viewport = Some(viewport2))
     
-    rendered1 should not be empty
-    rendered2 should not be empty
-    // The cube should appear in both renderings (check for non-space characters)
-    rendered1.replace(" ", "").length should be > 0
-    rendered2.replace(" ", "").length should be > 0
+    rendered1 should not be rendered2  // Different viewports should give different renderings
+  }
+
+  it should "render cube faces identically from all 6 orthogonal views" in {
+    // Create a cube of size 10 at origin
+    val cubeSize = 10.0
+    val viewportSize = cubeSize * 4  // Make viewport much larger than cube
+    val world = World.infinite
+      .add(TriangleShapes.cube(100, cubeSize), Coord(0, 0, 0))
+
+    // Define the 6 rotations to view each face straight-on
+    val rotations = List(
+      (Rotation.ZERO, "front"),                                    // Front view (default)
+      (Rotation(yaw = Math.PI, pitch = 0, roll = 0), "back"),     // Back view
+      (Rotation(yaw = Math.PI/2, pitch = 0, roll = 0), "right"),  // Right view
+      (Rotation(yaw = -Math.PI/2, pitch = 0, roll = 0), "left"),  // Left view
+      (Rotation(yaw = 0, pitch = Math.PI/2, roll = 0), "top"),    // Top view
+      (Rotation(yaw = 0, pitch = -Math.PI/2, roll = 0), "bottom") // Bottom view
+    )
+
+    // Render from each view
+    val renderings = rotations.map { case (rotation, name) =>
+      val rotatedWorld = world.add(TriangleShapes.cube(100, cubeSize), Coord(0, 0, 0), rotation)
+      val viewport = Viewport(
+        Coord(-viewportSize/2, -viewportSize/2, -viewportSize/2),  // Center the viewport
+        viewportSize.toInt, 
+        viewportSize.toInt,
+        viewportSize.toInt
+      )
+      // Print debug info for normal transformation
+      val cube = rotatedWorld.placements.head
+      val frontFaceNormal = cube.shape.asInstanceOf[TriangleMesh].triangles.head.normal
+      val worldNormal = cube.rotation.transformNormal(frontFaceNormal)
+      println(s"Original normal: $frontFaceNormal")
+      println(s"Transformed normal: $worldNormal")
+      
+      val rendered = Renderer.renderShadedForward(
+        rotatedWorld,
+        lightDirection = Coord(-1, -1, -1).normalize,  // Fixed light direction from above-left-front
+        ambient = 0.35,                                // Same ambient level as main app
+        xScale = 1,
+        viewport = Some(viewport)
+      )
+      
+      // Print debug info
+      println(s"\n=== $name view ===")
+      println("Raw rendering:")
+      println(rendered)
+      println(s"@ count: ${rendered.count(_ == '@')}")
+      
+      (name, rendered)
+    }
+
+    // All renderings should be non-empty
+    renderings.foreach { case (name, rendered) =>
+      withClue(s"$name view rendering was empty: ") {
+        rendered should not be empty
+      }
+    }
+
+    // Verify that each face has the correct shading based on its orientation to the light
+    renderings.foreach { case (name, rendering) =>
+      // Extract just the face part of the rendering (5x5 block of characters)
+      def extractFace(rendered: String): String = {
+        val allLines = rendered.split("\n")
+        
+        // Find the face lines - they're the only ones with non-space characters
+        val faceLines = allLines
+          .filter(line => line.exists(c => !c.isWhitespace))  // Find non-empty lines
+          .filter(line => !line.contains("┌") && !line.contains("└"))  // Skip frame borders
+          .map(line => line.replaceAll("[│]", "").trim)  // Remove vertical borders and trim
+          .filter(_.nonEmpty)  // Skip any empty lines after cleaning
+          .map(_.takeRight(5))  // Take just the 5 characters at the end
+        
+        // Print debug info
+        println(s"\n=== Face for $name view ===")
+        println(faceLines.mkString("\n"))
+        
+        faceLines.mkString("\n")
+      }
+      
+      val face = extractFace(rendering)
+      val lines = face.split("\n")
+      
+      // Verify face dimensions
+      withClue(s"$name view should be 5x5: ") {
+        lines.length should be(5)
+        lines.foreach { line =>
+          line.length should be(5)
+        }
+      }
+      
+      // Get the expected shading from the front face
+      val expectedShading = if (name == "front") {
+        val shading = lines(0)(0)  // First character of first line
+        println(s"\nFront face shading character: '${shading}'")
+        shading
+      } else {
+        val frontView = renderings.find(_._1 == "front").get._2
+        val frontFace = extractFace(frontView)
+        frontFace(0)  // First character
+      }
+      
+      // All characters in the face should match the front face shading
+      withClue(s"$name view should have same shading as front view ('${expectedShading}'): ") {
+        lines.foreach { line =>
+          line.forall(_ == expectedShading) should be(true)
+        }
+      }
+    }
   }
 
   it should "not have artificial boundaries for shape placement" in {

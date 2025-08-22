@@ -22,8 +22,8 @@ case class Placement(origin: Coord, rotation: Rotation, shape: Shape) {
     // 2. Apply inverse rotation (rotate by negative angles)
     val boxCenter = origin + shape.center
     val translated = coord - boxCenter
-    val inverseRotation = Rotation(-rotation.yaw, -rotation.pitch, -rotation.roll)
-    inverseRotation.applyTo(translated)
+    // Use the proper inverse rotation that applies the rotations in the correct order
+    rotation.inverse.applyTo(translated)
   }
   
   // Check if this placement would extend beyond world boundaries

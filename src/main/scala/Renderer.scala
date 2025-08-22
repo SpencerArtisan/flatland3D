@@ -122,11 +122,23 @@ object Renderer {
     result.toString
   }
 
-  private def transformLightToShapeSpace(worldLight: Coord, shapeRotation: Rotation): Coord =
+  private def transformLightToShapeSpace(worldLight: Coord, shapeRotation: Rotation): Coord = {
+    // When we rotate the cube to look at a face, we want that face to be lit the same way
+    // as the front face was. This means we need to rotate the light by the inverse rotation
+    // that we applied to the cube.
+    //
+    // For example:
+    // - If we rotate the cube 90° right to look at its right face
+    // - We need to rotate the light 90° left to maintain the same relative angle
     shapeRotation.inverse.applyTo(worldLight)
+  }
 
   private def calculateLambertianBrightness(surfaceNormal: Coord, lightDirection: Coord, ambientLevel: Double): Double = {
-    val lightDotNormal = Math.max(0.0, surfaceNormal.dot(lightDirection))
+    val normalizedNormal = surfaceNormal.normalize
+    val normalizedLight = lightDirection.normalize
+    // For consistent shading, we want the absolute value of the dot product
+    // This ensures that faces pointing in opposite directions get the same shading
+    val lightDotNormal = Math.abs(normalizedNormal.dot(normalizedLight))
     Math.min(1.0, Math.max(0.0, ambientLevel + (1.0 - ambientLevel) * lightDotNormal))
   }
 
@@ -302,9 +314,9 @@ object Renderer {
               // Shading timing start
               val shadingStart = System.nanoTime()
               
-              val surfaceNormal = triangle.normal
-              val transformedLight = transformLightToShapeSpace(light, placement.rotation)
-              val brightness = calculateLambertianBrightness(surfaceNormal, transformedLight, ambient)
+              // Transform the normal into world space using proper normal transformation
+              val worldNormal = placement.rotation.transformNormal(triangle.normal)
+              val brightness = calculateLambertianBrightness(worldNormal, light, ambient)
               val shadingChar = brightnessToCharacter(brightness, chars)
               
               frameBuffer(y)(x) = shadingChar
